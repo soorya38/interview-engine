@@ -9,8 +9,10 @@ type InterviewSession struct {
 	SessionID       string `json:"session_id"`
 	UserID          string `json:"user_id"`
 	StartTime       string `json:"start_time"`
-	Status          string `json:"status"`           // "active", "ended"
+	Status          string `json:"status"`           // "active", "ended", "auto_ended"
 	InitialQuestion string `json:"initial_question"` // First question from AI
+	QuestionCount   int    `json:"question_count"`   // Number of questions asked so far
+	MaxQuestions    int    `json:"max_questions"`    // Maximum questions allowed
 }
 
 // InterviewRequest represents a request to continue an interview
@@ -20,17 +22,21 @@ type InterviewRequest struct {
 
 // InterviewResponse represents the response from the interview system
 type InterviewResponse struct {
-	Response  string `json:"response"`
-	SessionID string `json:"session_id,omitempty"`
+	Response     string            `json:"response"`
+	SessionID    string            `json:"session_id,omitempty"`
+	SessionEnded bool              `json:"session_ended,omitempty"`
+	Summary      *InterviewSummary `json:"summary,omitempty"` // Included when session auto-ends
 }
 
 // InterviewSummary represents the final interview summary
 type InterviewSummary struct {
-	StrongPoints     []string `json:"strong_points"`
-	WeakPoints       []string `json:"weak_points"`
-	GrammaticalScore int      `json:"grammatical_score"` // 0-100
-	TechnicalScore   int      `json:"technical_score"`   // 0-100
-	PracticePoints   []string `json:"practice_points"`
+	StrongPoints       []string `json:"strong_points"`
+	WeakPoints         []string `json:"weak_points"`
+	GrammaticalScore   int      `json:"grammatical_score"` // 0-100, -1 if insufficient context
+	TechnicalScore     int      `json:"technical_score"`   // 0-100, -1 if insufficient context
+	PracticePoints     []string `json:"practice_points"`
+	ContextualRelevant bool     `json:"contextual_relevant"` // Whether responses were relevant
+	OffTopicCount      int      `json:"off_topic_count"`     // Number of off-topic responses
 }
 
 type Usecase interface {
