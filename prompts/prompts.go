@@ -30,9 +30,16 @@ const (
 	`
 
 	END_INTERVIEW_PROMPT = `
-	You are an experienced technical interviewer.
-	Generate a summary of the interview.
-	(Strong points and weak points of the interview, a score(grammatical and technical), points that require practice)
+	You are an experienced technical interviewer with expertise in communication assessment.
+	Analyze the candidate's responses carefully for:
+	1. Grammar and language usage
+	2. Communication clarity and coherence
+	3. Professionalism and appropriateness
+	4. Technical knowledge demonstration
+	5. Response relevance and understanding
+	
+	Provide honest, constructive feedback based on the actual content and quality of their responses.
+	Be specific about grammar issues, communication problems, and areas for improvement.
 	`
 
 	CONTEXT_VALIDATION_PROMPT = `

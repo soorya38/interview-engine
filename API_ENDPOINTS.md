@@ -112,17 +112,21 @@ Ends the interview session and generates a comprehensive summary.
 ```json
 {
   "strong_points": [
-    "Limited relevant responses to assess"
+    "Limited coherent communication to assess"
   ],
   "weak_points": [
     "Provided responses that were not relevant to the questions asked",
-    "Did not demonstrate understanding of interview context"
+    "Poor grammar and sentence structure",
+    "Unclear communication and lack of coherence",
+    "Unprofessional language usage"
   ],
   "grammatical_score": -1,
   "technical_score": -1,
   "practice_points": [
     "Focus on understanding and directly answering the questions asked",
-    "Practice active listening during interviews"
+    "Practice active listening during interviews",
+    "Improve basic grammar and sentence construction",
+    "Work on clear and professional communication"
   ],
   "contextual_relevant": false,
   "off_topic_count": 2
@@ -175,14 +179,18 @@ The interview system automatically manages session lifecycle:
 
 ## Context Validation System
 
-The system validates response relevance:
+The system validates response relevance and analyzes communication quality:
 
 - **Real-time Validation**: Each user response is checked against the previous question
 - **AI-Powered Analysis**: Uses structured prompts to determine relevance
 - **Scoring Logic**: 
   - If ≥50% of responses are relevant: Normal scoring (0-100)
   - If <50% of responses are relevant: No scores (-1 for both grammatical and technical)
-- **Feedback**: Off-topic responses are tracked and reported in the summary
+- **Quality Analysis**: Even for off-topic responses, the system analyzes:
+  - Grammar and language usage
+  - Communication clarity and coherence
+  - Professionalism and appropriateness
+- **Detailed Feedback**: Specific weak points and practice recommendations based on actual response quality
 
 ## Technical Implementation
 
