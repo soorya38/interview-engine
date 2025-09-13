@@ -20,18 +20,16 @@ func (h *Handler) interviewStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get userID from header
 	userID := r.Header.Get("X-User-ID")
 	if userID == "" {
 		http.Error(w, "User ID required in X-User-ID header", http.StatusBadRequest)
 		return
 	}
 
-	// Start interview session
 	session, err := h.usecase.StartInterview(r.Context(), userID)
 	if err != nil {
-		log.Printf("Failed to start interview: %v", err)
-		http.Error(w, "Failed to start interview", http.StatusInternalServerError)
+		log.Printf("unable to start interview: %v", err)
+		http.Error(w, "unable to start interview", http.StatusInternalServerError)
 		return
 	}
 
@@ -46,14 +44,12 @@ func (h *Handler) continueInterview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get userID from header
 	userID := r.Header.Get("X-User-ID")
 	if userID == "" {
 		http.Error(w, "User ID required in X-User-ID header", http.StatusBadRequest)
 		return
 	}
 
-	// Extract sessionID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/v1/interview/")
 	sessionID := path
 	if sessionID == "" {
@@ -61,18 +57,16 @@ func (h *Handler) continueInterview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
 	var request usecase.InterviewRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Continue interview
 	response, err := h.usecase.ContinueInterview(r.Context(), userID, sessionID, &request)
 	if err != nil {
-		log.Printf("Failed to continue interview: %v", err)
-		http.Error(w, "Failed to continue interview", http.StatusInternalServerError)
+		log.Printf("unable to continue interview: %v", err)
+		http.Error(w, "unable to continue interview", http.StatusInternalServerError)
 		return
 	}
 
@@ -87,14 +81,12 @@ func (h *Handler) endInterview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get userID from header
 	userID := r.Header.Get("X-User-ID")
 	if userID == "" {
 		http.Error(w, "User ID required in X-User-ID header", http.StatusBadRequest)
 		return
 	}
 
-	// Extract sessionID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/v1/interview/end/")
 	sessionID := path
 	if sessionID == "" {
@@ -102,11 +94,10 @@ func (h *Handler) endInterview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// End interview and get summary
 	summary, err := h.usecase.EndInterview(r.Context(), userID, sessionID)
 	if err != nil {
-		log.Printf("Failed to end interview: %v", err)
-		http.Error(w, "Failed to end interview", http.StatusInternalServerError)
+		log.Printf("unable to end interview: %v", err)
+		http.Error(w, "unable to end interview", http.StatusInternalServerError)
 		return
 	}
 

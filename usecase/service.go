@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,6 +23,12 @@ import (
 const (
 	// MaxInterviewQuestions defines the maximum number of questions in an interview
 	MaxInterviewQuestions = 4
+	StatusActive          = "active"
+	StatusAutoEnded       = "auto_ended"
+	StatusEnded           = "ended"
+
+	QuestionEnded  = "ended"
+	QuestionTypeAI = "ai_question"
 )
 
 // Service is the main service for the conversational context system
@@ -58,19 +65,22 @@ func NewService(
 func (s *Service) StartInterview(ctx context.Context, userID string) (*InterviewSession, error) {
 	sessionID := uuid.New().String()
 
-	// Generate initial interview question using START_INTERVIEW_PROMPT
-	initialResponse, err := s.generateAIResponse(ctx, prompts.START_INTERVIEW_PROMPT)
+	questions := ""
+	firstQuestion := ""
+	initialPrompt := fmt.Sprintf(prompts.START_INTERVIEW_PROMPT, questions, firstQuestion)
+	initialResponse, err := s.generateAIResponse(ctx, initialPrompt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate initial question: %w", err)
+		log.Printf("Unable to generate initial question, err=%v", err)
+		return nil, fmt.Errorf("unable to generate initial question, err=%w", err)
 	}
 
 	session := &InterviewSession{
 		SessionID:       sessionID,
 		UserID:          userID,
 		StartTime:       time.Now().Format(time.RFC3339),
-		Status:          "active",
+		Status:          StatusActive,
 		InitialQuestion: initialResponse,
-		QuestionCount:   1, // Starting with 1 since we just asked the initial question
+		QuestionCount:   1,
 		MaxQuestions:    MaxInterviewQuestions,
 	}
 
@@ -78,9 +88,8 @@ func (s *Service) StartInterview(ctx context.Context, userID string) (*Interview
 	s.activeSessions[sessionID] = session
 	s.sessionMutex.Unlock()
 
-	// Store the initial AI question
 	aiTurn := repository.ConversationalTurn{
-		Type:      "ai_question",
+		Type:      QuestionTypeAI,
 		Content:   initialResponse,
 		Metadata:  map[string]interface{}{"session_id": sessionID, "stage": "start"},
 		Timestamp: time.Now(),
@@ -88,49 +97,49 @@ func (s *Service) StartInterview(ctx context.Context, userID string) (*Interview
 
 	_, err = s.contextManager.StoreContext(ctx, userID, sessionID, aiTurn)
 	if err != nil {
-		fmt.Printf("Warning: Failed to store initial AI question: %v\n", err)
+		fmt.Printf("Warning: unable to store initial AI question: %v\n", err)
 	}
 
 	return session, nil
 }
 
 // ContinueInterview processes user input and generates AI response with context
-func (s *Service) ContinueInterview(ctx context.Context, userID, sessionID string, request *InterviewRequest) (*InterviewResponse, error) {
-	// Validate session
+func (s *Service) ContinueInterview(
+	ctx context.Context,
+	userID,
+	sessionID string,
+	request *InterviewRequest,
+) (*InterviewResponse, error) {
 	s.sessionMutex.Lock()
 	session, exists := s.activeSessions[sessionID]
-	if !exists || session.UserID != userID || session.Status != "active" {
+	if !exists || session.UserID != userID || session.Status != StatusActive {
 		s.sessionMutex.Unlock()
 		return nil, fmt.Errorf("invalid or inactive session")
 	}
 
-	// Get the last AI question to validate context
 	history, err := s.contextManager.GetConversationHistory(userID, sessionID)
 	if err != nil {
 		s.sessionMutex.Unlock()
-		return nil, fmt.Errorf("failed to get conversation history: %w", err)
+		return nil, fmt.Errorf("unable to get conversation history: %w", err)
 	}
 
-	// Find the most recent AI question
 	var lastQuestion string
 	for i := len(history) - 1; i >= 0; i-- {
-		if recordType, ok := history[i].Metadata["type"].(string); ok && recordType == "ai_question" {
+		if recordType, ok := history[i].Metadata["type"].(string); ok && recordType == QuestionTypeAI {
 			lastQuestion = history[i].Text
 			break
 		}
 	}
 
-	// Validate response context if we have a question
 	isRelevant := true
 	if lastQuestion != "" {
 		isRelevant, err = s.validateResponseContext(ctx, lastQuestion, request.Text)
 		if err != nil {
 			// Log error but continue - don't fail the interview for validation issues
-			fmt.Printf("Warning: Failed to validate response context: %v\n", err)
+			fmt.Printf("Warning: unable to validate response context: %v\n", err)
 		}
 	}
 
-	// Store user input as conversational turn with relevance metadata
 	userTurn := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   request.Text,
@@ -141,56 +150,52 @@ func (s *Service) ContinueInterview(ctx context.Context, userID, sessionID strin
 	_, err = s.contextManager.StoreContext(ctx, userID, sessionID, userTurn)
 	if err != nil {
 		s.sessionMutex.Unlock()
-		return nil, fmt.Errorf("failed to store user context: %w", err)
+		return nil, fmt.Errorf("unable to store user context: %w", err)
 	}
 
-	// Check if we've reached the maximum number of questions
 	if session.QuestionCount >= session.MaxQuestions {
-		// Auto-end the session
 		session.Status = "auto_ended"
 		delete(s.activeSessions, sessionID)
 		s.sessionMutex.Unlock()
 
-		// Generate summary
 		summary, err := s.generateInterviewSummaryInternal(ctx, userID, sessionID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate auto-end summary: %w", err)
+			return nil, fmt.Errorf("unable to generate auto-end summary: %w", err)
 		}
 
 		return &InterviewResponse{
-			Response:     "Thank you for completing the interview! The session has ended automatically as we've reached the maximum number of questions. Here's your summary:",
+			Response:     prompts.COMPLETION_PROMPT,
 			SessionEnded: true,
 			Summary:      summary,
 		}, nil
 	}
 
-	// Increment question count for the next question
 	session.QuestionCount++
 	s.sessionMutex.Unlock()
 
-	// Generate context-aware prompt using CONTINUE_INTERVIEW_PROMPT
-	prompt, err := s.contextManager.ProcessInteraction(ctx, userID, sessionID, nil, request.Text, prompts.CONTINUE_INTERVIEW_PROMPT, 5)
+	questions := ""
+	continuePrompt := fmt.Sprintf(prompts.CONTINUE_INTERVIEW_PROMPT, questions)
+	prompt, err := s.contextManager.ProcessInteraction(
+		ctx, userID, sessionID, nil, request.Text, continuePrompt, 5,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to process interaction: %w", err)
+		return nil, fmt.Errorf("unable to process interaction: %w", err)
 	}
 
-	// Check if this will be the last question
 	var aiResponse string
 	if session.QuestionCount >= session.MaxQuestions {
-		// This is the last question, modify prompt to indicate it's the final question
-		finalPrompt := fmt.Sprintf("%s\n\nIMPORTANT: This is the final question of the interview. Make it a good concluding question.", prompt)
+		finalPrompt := fmt.Sprintf(prompts.FINAL_QUESTION_PROMPT, prompt)
 		aiResponse, err = s.generateAIResponse(ctx, finalPrompt)
 	} else {
 		aiResponse, err = s.generateAIResponse(ctx, prompt)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate AI response: %w", err)
+		return nil, fmt.Errorf("unable to generate AI response: %w", err)
 	}
 
-	// Store AI response
 	aiTurn := repository.ConversationalTurn{
-		Type:      "ai_question",
+		Type:      QuestionTypeAI,
 		Content:   aiResponse,
 		Metadata:  map[string]interface{}{"session_id": sessionID, "question_number": session.QuestionCount},
 		Timestamp: time.Now(),
@@ -198,7 +203,7 @@ func (s *Service) ContinueInterview(ctx context.Context, userID, sessionID strin
 
 	_, err = s.contextManager.StoreContext(ctx, userID, sessionID, aiTurn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to store AI context: %w", err)
+		return nil, fmt.Errorf("unable to store AI context: %w", err)
 	}
 
 	return &InterviewResponse{
@@ -208,16 +213,14 @@ func (s *Service) ContinueInterview(ctx context.Context, userID, sessionID strin
 
 // EndInterview ends the session and generates summary
 func (s *Service) EndInterview(ctx context.Context, userID, sessionID string) (*InterviewSummary, error) {
-	// Validate session
 	s.sessionMutex.Lock()
 	session, exists := s.activeSessions[sessionID]
-	if !exists || session.UserID != userID || (session.Status != "active" && session.Status != "auto_ended") {
+	if !exists || session.UserID != userID || (session.Status != StatusActive && session.Status != StatusAutoEnded) {
 		s.sessionMutex.Unlock()
 		return nil, fmt.Errorf("invalid or inactive session")
 	}
 
-	// Mark session as ended if it wasn't already auto-ended
-	if session.Status == "active" {
+	if session.Status == StatusActive {
 		session.Status = "ended"
 	}
 	delete(s.activeSessions, sessionID)
@@ -227,17 +230,18 @@ func (s *Service) EndInterview(ctx context.Context, userID, sessionID string) (*
 }
 
 // generateInterviewSummaryInternal is the internal method for generating summaries
-func (s *Service) generateInterviewSummaryInternal(ctx context.Context, userID, sessionID string) (*InterviewSummary, error) {
-	// Get conversation history
+func (s *Service) generateInterviewSummaryInternal(
+	ctx context.Context,
+	userID, sessionID string,
+) (*InterviewSummary, error) {
 	history, err := s.contextManager.GetConversationHistory(userID, sessionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get conversation history: %w", err)
+		return nil, fmt.Errorf("unable to get conversation history: %w", err)
 	}
 
-	// Generate summary using AI
 	summary, err := s.generateInterviewSummary(ctx, history)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate summary: %w", err)
+		return nil, fmt.Errorf("unable to generate summary: %w", err)
 	}
 
 	return summary, nil
@@ -269,20 +273,21 @@ func (s *Service) validateResponseContext(ctx context.Context, question, respons
 
 	aiValidation, err := s.generateAIResponse(ctx, validationPrompt)
 	if err != nil {
-		return true, err // Default to relevant if validation fails
+		return true, err
 	}
 
-	// Check if the response contains "RELEVANT" or "IRRELEVANT"
 	aiValidation = strings.TrimSpace(strings.ToUpper(aiValidation))
 	return strings.Contains(aiValidation, "RELEVANT") && !strings.Contains(aiValidation, "IRRELEVANT"), nil
 }
 
 // generateInterviewSummary creates a summary of the interview
-func (s *Service) generateInterviewSummary(ctx context.Context, history []*vectordb.VectorRecord) (*InterviewSummary, error) {
+func (s *Service) generateInterviewSummary(
+	ctx context.Context,
+	history []*vectordb.VectorRecord,
+) (*InterviewSummary, error) {
 	var conversation strings.Builder
 	conversation.WriteString("Interview Conversation:\n")
 
-	// Analyze context relevance
 	totalResponses := 0
 	relevantResponses := 0
 	offTopicCount := 0
@@ -293,7 +298,6 @@ func (s *Service) generateInterviewSummary(ctx context.Context, history []*vecto
 			totalResponses++
 			conversation.WriteString(fmt.Sprintf("Candidate: %s\n", record.Text))
 
-			// Check if response was marked as relevant
 			if isRelevant, ok := record.Metadata["is_relevant"].(bool); ok {
 				if isRelevant {
 					relevantResponses++
@@ -301,74 +305,32 @@ func (s *Service) generateInterviewSummary(ctx context.Context, history []*vecto
 					offTopicCount++
 				}
 			} else {
-				// If no relevance data, assume relevant (for backward compatibility)
 				relevantResponses++
 			}
-		} else if recordType == "ai_question" {
+		} else if recordType == QuestionTypeAI {
 			conversation.WriteString(fmt.Sprintf("Interviewer: %s\n", record.Text))
 		}
 	}
 
-	// Calculate relevance percentage
 	contextualRelevant := totalResponses > 0 && (float64(relevantResponses)/float64(totalResponses)) >= 0.5
 
 	var summaryPrompt string
 	if !contextualRelevant || totalResponses == 0 {
-		// If most responses were off-topic, still provide scores but note the context issues
-		summaryPrompt = fmt.Sprintf(`%s
-
-Interview Conversation:
-%s
-
-IMPORTANT: The candidate provided mostly irrelevant or off-topic responses (%d out of %d responses were off-topic). 
-However, still assess their grammatical and technical communication skills based on the actual content they provided.
-
-Analyze the candidate's actual responses for communication quality, grammar, coherence, and professionalism.
-Provide numerical scores based on their actual language usage and any technical knowledge demonstrated.
-
-Provide analysis in this exact format:
-STRONG POINTS:
-- [analyze if there are any positive aspects in their communication, if none then "Limited coherent communication to assess"]
-
-WEAK POINTS:
-- Provided responses that were not relevant to the questions asked
-- [analyze actual grammar, communication, coherence issues from their responses]
-- [analyze professionalism and clarity issues]
-
-GRAMMATICAL SCORE: [0-100 based on actual grammar, sentence structure, and language usage in their responses]
-TECHNICAL SCORE: [0-100 based on any technical knowledge demonstrated, even if off-topic]
-
-PRACTICE POINTS:
-- Focus on understanding and directly answering the questions asked
-- Practice active listening during interviews
-- [specific recommendations based on their actual communication issues]
-- [grammar and language improvement recommendations if needed]
-`, prompts.END_INTERVIEW_PROMPT, conversation.String(), offTopicCount, totalResponses)
+		summaryPrompt = fmt.Sprintf(
+			prompts.SUMMARY_PROMPT_IRRELEVANT,
+			prompts.END_INTERVIEW_PROMPT,
+			conversation.String(),
+			offTopicCount,
+			totalResponses,
+		)
 	} else {
-		// Normal scoring for contextually relevant responses
-		summaryPrompt = fmt.Sprintf(`%s
-
-Interview Conversation:
-%s
-
-The candidate provided mostly relevant responses (%d out of %d were contextually appropriate).
-
-Provide analysis in this exact format:
-STRONG POINTS:
-- [point 1]
-- [point 2]
-
-WEAK POINTS:
-- [point 1]
-- [point 2]
-
-GRAMMATICAL SCORE: [0-100]
-TECHNICAL SCORE: [0-100]
-
-PRACTICE POINTS:
-- [point 1]
-- [point 2]
-`, prompts.END_INTERVIEW_PROMPT, conversation.String(), relevantResponses, totalResponses)
+		summaryPrompt = fmt.Sprintf(
+			prompts.SUMMARY_PROMPT_RELEVANT,
+			prompts.END_INTERVIEW_PROMPT,
+			conversation.String(),
+			relevantResponses,
+			totalResponses,
+		)
 	}
 
 	aiSummary, err := s.generateAIResponse(ctx, summaryPrompt)
@@ -376,11 +338,6 @@ PRACTICE POINTS:
 		return nil, err
 	}
 
-	// Debug: Print the AI response to understand what we're getting
-	fmt.Printf("DEBUG - AI Summary Response:\n%s\n", aiSummary)
-	fmt.Printf("DEBUG - End of AI Response\n")
-
-	// Parse AI response into structured summary
 	summary := s.parseInterviewSummary(aiSummary)
 	summary.ContextualRelevant = contextualRelevant
 	summary.OffTopicCount = offTopicCount
@@ -393,21 +350,19 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 	summary := &InterviewSummary{
 		StrongPoints:       []string{},
 		WeakPoints:         []string{},
-		GrammaticalScore:   50, // Default to 50 if parsing fails
-		TechnicalScore:     50, // Default to 50 if parsing fails
+		GrammaticalScore:   0,
+		TechnicalScore:     0,
 		PracticePoints:     []string{},
 		ContextualRelevant: true,
 		OffTopicCount:      0,
 	}
 
-	// Parse the AI response for actual content
 	lines := strings.Split(aiResponse, "\n")
 	currentSection := ""
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
-		// Check for section headers (case insensitive and flexible)
 		lineUpper := strings.ToUpper(line)
 		if strings.Contains(lineUpper, "STRONG POINTS") {
 			currentSection = "strong"
@@ -419,10 +374,10 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 			currentSection = "practice"
 			continue
 		} else if strings.Contains(lineUpper, "GRAMMATICAL SCORE") {
-			summary.GrammaticalScore = s.extractScore(line, 30) // Default to 30 for poor grammar
+			summary.GrammaticalScore = s.extractScore(line, 30)
 			continue
 		} else if strings.Contains(lineUpper, "TECHNICAL SCORE") {
-			summary.TechnicalScore = s.extractScore(line, 25) // Default to 25 for poor technical
+			summary.TechnicalScore = s.extractScore(line, 25)
 			continue
 		}
 
@@ -456,7 +411,6 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 		}
 	}
 
-	// Only add minimal defaults if absolutely no content was parsed
 	if len(summary.StrongPoints) == 0 {
 		summary.StrongPoints = []string{"Analysis not available"}
 	}
@@ -472,19 +426,16 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 
 // extractScore extracts numerical score from a line, with fallback default
 func (s *Service) extractScore(line string, defaultScore int) int {
-	// Use regex to find numbers in the line
 	re := regexp.MustCompile(`\d+`)
 	matches := re.FindAllString(line, -1)
 
 	for _, match := range matches {
 		if score, err := strconv.Atoi(match); err == nil {
-			// Ensure score is within valid range
 			if score >= 0 && score <= 100 {
 				return score
 			}
 		}
 	}
 
-	// Return default score if no valid number found
 	return defaultScore
 }
