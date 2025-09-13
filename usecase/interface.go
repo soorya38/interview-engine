@@ -32,8 +32,8 @@ type InterviewResponse struct {
 type InterviewSummary struct {
 	StrongPoints       []string `json:"strong_points"`
 	WeakPoints         []string `json:"weak_points"`
-	GrammaticalScore   int      `json:"grammatical_score"` // 0-100, -1 if insufficient context
-	TechnicalScore     int      `json:"technical_score"`   // 0-100, -1 if insufficient context
+	GrammaticalScore   int      `json:"grammatical_score"` // 0-100 based on actual content quality
+	TechnicalScore     int      `json:"technical_score"`   // 0-100 based on actual content quality
 	PracticePoints     []string `json:"practice_points"`
 	ContextualRelevant bool     `json:"contextual_relevant"` // Whether responses were relevant
 	OffTopicCount      int      `json:"off_topic_count"`     // Number of off-topic responses

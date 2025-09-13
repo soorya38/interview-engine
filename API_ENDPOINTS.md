@@ -24,9 +24,9 @@ Starts a new interview session and returns a session ID.
   "user_id": "user-123",
   "start_time": "2025-09-13T10:30:00Z",
   "status": "active",
-  "initial_question": "Hello! Let's start the interview. What is your name?",
+  "initial_question": "What is the difference between JDK, JRE, and JVM?",
   "question_count": 1,
-  "max_questions": 10
+  "max_questions": 4
 }
 ```
 
@@ -108,7 +108,7 @@ Ends the interview session and generates a comprehensive summary.
 }
 ```
 
-**No-Score Response (for off-topic answers):**
+**Low-Score Response (for off-topic answers with poor quality):**
 ```json
 {
   "strong_points": [
@@ -120,8 +120,8 @@ Ends the interview session and generates a comprehensive summary.
     "Unclear communication and lack of coherence",
     "Unprofessional language usage"
   ],
-  "grammatical_score": -1,
-  "technical_score": -1,
+  "grammatical_score": 25,
+  "technical_score": 20,
   "practice_points": [
     "Focus on understanding and directly answering the questions asked",
     "Practice active listening during interviews",
@@ -167,15 +167,27 @@ curl -X POST \
 
 The interview system automatically manages session lifecycle:
 
-1. **Question Limit**: Each session is limited to 2 questions maximum
-2. **Auto-End Trigger**: When the 2nd question is answered, the session automatically ends
+1. **Question Limit**: Each session is limited to 4 Java questions maximum
+2. **Auto-End Trigger**: When the 4th question is answered, the session automatically ends
 3. **Automatic Summary**: The system generates and returns a comprehensive summary
-4. **Final Question**: The AI is notified when asking the final (2nd) question
-5. **Session Status**: Sessions can have status: `"active"`, `"ended"`, or `"auto_ended"`
-6. **Context Validation**: Each response is validated for relevance to the question asked
-7. **Smart Scoring**: Scores are only provided if responses are contextually relevant
+4. **Final Question**: The AI is notified when asking the final (4th) question
+5. **Structured Questions**: Follows a predefined sequence of Java technical questions
+6. **Session Status**: Sessions can have status: `"active"`, `"ended"`, or `"auto_ended"`
+7. **Context Validation**: Each response is validated for relevance to the question asked
+8. **Smart Scoring**: Numerical scores provided based on actual content quality
 
 **Note**: The `/v1/interview/end/{sessionID}` endpoint can still be called manually to end a session early.
+
+## Java Interview Questions
+
+The system asks these 4 Java questions in sequence:
+
+1. **What is the difference between JDK, JRE, and JVM?**
+2. **Is Java platform-independent? Why?**
+3. **What are the main features of Java?**
+4. **What is the difference between == and .equals()?**
+
+Each question is asked in order, and the system automatically progresses through the sequence based on the conversation history.
 
 ## Context Validation System
 
@@ -184,8 +196,8 @@ The system validates response relevance and analyzes communication quality:
 - **Real-time Validation**: Each user response is checked against the previous question
 - **AI-Powered Analysis**: Uses structured prompts to determine relevance
 - **Scoring Logic**: 
-  - If ≥50% of responses are relevant: Normal scoring (0-100)
-  - If <50% of responses are relevant: No scores (-1 for both grammatical and technical)
+  - Always provides numerical scores (0-100) based on actual content quality
+  - Off-topic responses receive lower scores but still get evaluated for grammar and technical content
 - **Quality Analysis**: Even for off-topic responses, the system analyzes:
   - Grammar and language usage
   - Communication clarity and coherence
@@ -201,7 +213,7 @@ The system validates response relevance and analyzes communication quality:
   - `CONTINUE_INTERVIEW_PROMPT`: Context-aware follow-up questions
   - `END_INTERVIEW_PROMPT`: Comprehensive interview analysis and scoring
 - **Session Management**: In-memory storage for active sessions with user isolation
-- **Question Limiting**: Automatic session termination after 2 questions with summary
+- **Question Limiting**: Automatic session termination after 4 Java questions with summary
 - **Auto-End Feature**: Sessions automatically end when question limit is reached
 - **Context Validation**: AI validates response relevance to interview questions
 - **Smart Scoring**: No scores provided for off-topic or irrelevant responses

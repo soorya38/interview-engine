@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +21,7 @@ import (
 
 const (
 	// MaxInterviewQuestions defines the maximum number of questions in an interview
-	MaxInterviewQuestions = 2
+	MaxInterviewQuestions = 4
 )
 
 // Service is the main service for the conversational context system
@@ -312,16 +314,17 @@ func (s *Service) generateInterviewSummary(ctx context.Context, history []*vecto
 
 	var summaryPrompt string
 	if !contextualRelevant || totalResponses == 0 {
-		// If most responses were off-topic, don't provide numerical scores but analyze the content quality
+		// If most responses were off-topic, still provide scores but note the context issues
 		summaryPrompt = fmt.Sprintf(`%s
 
 Interview Conversation:
 %s
 
 IMPORTANT: The candidate provided mostly irrelevant or off-topic responses (%d out of %d responses were off-topic). 
-Do not provide numerical scores for grammatical or technical assessment, but DO analyze the actual quality of communication, grammar, and content provided.
+However, still assess their grammatical and technical communication skills based on the actual content they provided.
 
 Analyze the candidate's actual responses for communication quality, grammar, coherence, and professionalism.
+Provide numerical scores based on their actual language usage and any technical knowledge demonstrated.
 
 Provide analysis in this exact format:
 STRONG POINTS:
@@ -332,8 +335,8 @@ WEAK POINTS:
 - [analyze actual grammar, communication, coherence issues from their responses]
 - [analyze professionalism and clarity issues]
 
-GRAMMATICAL SCORE: -1
-TECHNICAL SCORE: -1
+GRAMMATICAL SCORE: [0-100 based on actual grammar, sentence structure, and language usage in their responses]
+TECHNICAL SCORE: [0-100 based on any technical knowledge demonstrated, even if off-topic]
 
 PRACTICE POINTS:
 - Focus on understanding and directly answering the questions asked
@@ -373,6 +376,10 @@ PRACTICE POINTS:
 		return nil, err
 	}
 
+	// Debug: Print the AI response to understand what we're getting
+	fmt.Printf("DEBUG - AI Summary Response:\n%s\n", aiSummary)
+	fmt.Printf("DEBUG - End of AI Response\n")
+
 	// Parse AI response into structured summary
 	summary := s.parseInterviewSummary(aiSummary)
 	summary.ContextualRelevant = contextualRelevant
@@ -386,8 +393,8 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 	summary := &InterviewSummary{
 		StrongPoints:       []string{},
 		WeakPoints:         []string{},
-		GrammaticalScore:   -1, // Default to -1, will be updated if found
-		TechnicalScore:     -1, // Default to -1, will be updated if found
+		GrammaticalScore:   50, // Default to 50 if parsing fails
+		TechnicalScore:     50, // Default to 50 if parsing fails
 		PracticePoints:     []string{},
 		ContextualRelevant: true,
 		OffTopicCount:      0,
@@ -400,56 +407,33 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
-		if strings.HasPrefix(line, "STRONG POINTS:") {
+		// Check for section headers (case insensitive and flexible)
+		lineUpper := strings.ToUpper(line)
+		if strings.Contains(lineUpper, "STRONG POINTS") {
 			currentSection = "strong"
 			continue
-		} else if strings.HasPrefix(line, "WEAK POINTS:") {
+		} else if strings.Contains(lineUpper, "WEAK POINTS") {
 			currentSection = "weak"
 			continue
-		} else if strings.HasPrefix(line, "PRACTICE POINTS:") {
+		} else if strings.Contains(lineUpper, "PRACTICE POINTS") {
 			currentSection = "practice"
 			continue
-		} else if strings.Contains(line, "GRAMMATICAL SCORE:") {
-			if strings.Contains(line, "-1") {
-				summary.GrammaticalScore = -1
-			} else {
-				// Try to extract numeric score (basic parsing)
-				parts := strings.Split(line, ":")
-				if len(parts) > 1 {
-					scoreStr := strings.TrimSpace(parts[1])
-					// For now, keep as -1 if it's not a clear number
-					if scoreStr != "-1" && len(scoreStr) > 0 {
-						// In a real implementation, you'd parse the number properly
-						summary.GrammaticalScore = 75 // Placeholder for parsed score
-					}
-				}
-			}
+		} else if strings.Contains(lineUpper, "GRAMMATICAL SCORE") {
+			summary.GrammaticalScore = s.extractScore(line, 30) // Default to 30 for poor grammar
 			continue
-		} else if strings.Contains(line, "TECHNICAL SCORE:") {
-			if strings.Contains(line, "-1") {
-				summary.TechnicalScore = -1
-			} else {
-				// Try to extract numeric score (basic parsing)
-				parts := strings.Split(line, ":")
-				if len(parts) > 1 {
-					scoreStr := strings.TrimSpace(parts[1])
-					// For now, keep as -1 if it's not a clear number
-					if scoreStr != "-1" && len(scoreStr) > 0 {
-						// In a real implementation, you'd parse the number properly
-						summary.TechnicalScore = 70 // Placeholder for parsed score
-					}
-				}
-			}
+		} else if strings.Contains(lineUpper, "TECHNICAL SCORE") {
+			summary.TechnicalScore = s.extractScore(line, 25) // Default to 25 for poor technical
 			continue
 		}
 
-		// Parse bullet points
-		if strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "• ") {
+		// Parse bullet points and regular lines
+		if strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "• ") || strings.HasPrefix(line, "* ") {
 			point := strings.TrimPrefix(line, "- ")
 			point = strings.TrimPrefix(point, "• ")
+			point = strings.TrimPrefix(point, "* ")
 			point = strings.TrimSpace(point)
 
-			if point != "" {
+			if point != "" && currentSection != "" {
 				switch currentSection {
 				case "strong":
 					summary.StrongPoints = append(summary.StrongPoints, point)
@@ -459,19 +443,48 @@ func (s *Service) parseInterviewSummary(aiResponse string) *InterviewSummary {
 					summary.PracticePoints = append(summary.PracticePoints, point)
 				}
 			}
+		} else if line != "" && currentSection != "" && !strings.Contains(strings.ToUpper(line), "SCORE") {
+			// Handle non-bullet point content that might be part of a section
+			switch currentSection {
+			case "strong":
+				summary.StrongPoints = append(summary.StrongPoints, line)
+			case "weak":
+				summary.WeakPoints = append(summary.WeakPoints, line)
+			case "practice":
+				summary.PracticePoints = append(summary.PracticePoints, line)
+			}
 		}
 	}
 
-	// Ensure we have at least some default content if parsing failed
+	// Only add minimal defaults if absolutely no content was parsed
 	if len(summary.StrongPoints) == 0 {
-		summary.StrongPoints = []string{"Limited coherent communication to assess"}
+		summary.StrongPoints = []string{"Analysis not available"}
 	}
 	if len(summary.WeakPoints) == 0 {
-		summary.WeakPoints = []string{"Communication and response quality needs improvement"}
+		summary.WeakPoints = []string{"Analysis not available"}
 	}
 	if len(summary.PracticePoints) == 0 {
-		summary.PracticePoints = []string{"Focus on clear communication", "Practice interview preparation"}
+		summary.PracticePoints = []string{"Analysis not available"}
 	}
 
 	return summary
+}
+
+// extractScore extracts numerical score from a line, with fallback default
+func (s *Service) extractScore(line string, defaultScore int) int {
+	// Use regex to find numbers in the line
+	re := regexp.MustCompile(`\d+`)
+	matches := re.FindAllString(line, -1)
+
+	for _, match := range matches {
+		if score, err := strconv.Atoi(match); err == nil {
+			// Ensure score is within valid range
+			if score >= 0 && score <= 100 {
+				return score
+			}
+		}
+	}
+
+	// Return default score if no valid number found
+	return defaultScore
 }
