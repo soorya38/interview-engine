@@ -35,14 +35,30 @@ func (r *Repository) CreateTopic(ctx context.Context, topic *entity.Topic) error
 }
 
 // GetQuestionsByTopicID gets questions by topic ID
-func (r *Repository) GetQuestionsByTopicID(ctx context.Context, topicID string) (*entity.Question, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT id, topic_id, question, created_at, updated_at FROM questions WHERE topic_id = ?", topicID)
+func (r *Repository) GetQuestionsByTopicID(ctx context.Context, topicID string) ([]*entity.Question, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT id, topic_id, question, created_by, updated_by, created_at, updated_at FROM questions WHERE topic_id = ?", topicID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	questions := &entity.Question{}
+	questions := []*entity.Question{}
+	for rows.Next() {
+		question := &entity.Question{}
+		err = rows.Scan(
+			&question.ID,
+			&question.TopicID,
+			&question.Question,
+			&question.CreatedBy,
+			&question.UpdatedBy,
+			&question.CreatedAt,
+			&question.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		questions = append(questions, question)
+	}
 	return questions, nil
 }
 
@@ -120,7 +136,7 @@ func (r *Repository) GetQuestions(ctx context.Context) ([]*entity.Question, erro
 func (r *Repository) GetQuestionByID(ctx context.Context, id string) (*entity.Question, error) {
 	row := r.db.QueryRowContext(
 		ctx,
-		"SELECT id, topic_id, question, created_by, updated_by, created_at, updated_at FROM questions WHERE id = ?",
+		"SELECT id, topic_id, question, created_by, updated_by, created_at, updated_at FROM questions WHERE topic_id = ?",
 		id,
 	)
 	question := &entity.Question{}

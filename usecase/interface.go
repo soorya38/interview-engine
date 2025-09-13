@@ -9,11 +9,13 @@ import (
 type InterviewSession struct {
 	SessionID       string `json:"session_id"`
 	UserID          string `json:"user_id"`
+	TopicID         string `json:"topic_id"`
 	StartTime       string `json:"start_time"`
 	Status          string `json:"status"`           // "active", "ended", "auto_ended"
 	InitialQuestion string `json:"initial_question"` // First question from AI
 	QuestionCount   int    `json:"question_count"`   // Number of questions asked so far
 	MaxQuestions    int    `json:"max_questions"`    // Maximum questions allowed
+	CurrentQuestionIndex int `json:"current_question_index"` // Index of current question in the list
 }
 
 // InterviewRequest represents a request to continue an interview
@@ -46,7 +48,7 @@ type Repository interface {
 }
 
 type Reader interface {
-	GetQuestionsByTopicID(ctx context.Context, topicID string) (*entity.Question, error)
+	GetQuestionsByTopicID(ctx context.Context, topicID string) ([]*entity.Question, error)
 	GetTopics(ctx context.Context) ([]*entity.Topic, error)
 	GetQuestions(ctx context.Context) ([]*entity.Question, error)
 	GetQuestionByID(ctx context.Context, id string) (*entity.Question, error)
@@ -59,7 +61,7 @@ type Writer interface {
 }
 
 type Usecase interface {
-	StartInterview(ctx context.Context, userID string) (*InterviewSession, error)
+	StartInterview(ctx context.Context, userID, questionID string) (*InterviewSession, error)
 	ContinueInterview(ctx context.Context, userID, sessionID string, request *InterviewRequest) (*InterviewResponse, error)
 	EndInterview(ctx context.Context, userID, sessionID string) (*InterviewSummary, error)
 	CreateTopic(ctx context.Context, userID, topic string) (string, error)

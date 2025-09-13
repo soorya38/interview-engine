@@ -26,8 +26,13 @@ func (h *Handler) interviewStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User ID required in X-User-ID header", http.StatusBadRequest)
 		return
 	}
+	topicID := r.Header.Get("X-Topic-ID")
+	if topicID == "" {
+		http.Error(w, "Topic ID required in X-Topic-ID header", http.StatusBadRequest)
+		return
+	}
 
-	session, err := h.usecase.StartInterview(r.Context(), userID)
+	session, err := h.usecase.StartInterview(r.Context(), userID, topicID)
 	if err != nil {
 		log.Printf("unable to start interview: %v", err)
 		http.Error(w, "unable to start interview", http.StatusInternalServerError)

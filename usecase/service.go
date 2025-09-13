@@ -65,13 +65,35 @@ func NewService(
 	}
 }
 
+// countSentences counts the number of sentences in a text
+func countSentences(text string) int {
+	parts := strings.Split(text, "\n")
+	return len(parts)
+}
+
 // StartInterview creates a new interview session and generates initial question
-func (s *Service) StartInterview(ctx context.Context, userID string) (*InterviewSession, error) {
+func (s *Service) StartInterview(ctx context.Context, userID, topicID string) (*InterviewSession, error) {
 	sessionID := uuid.New().String()
 
-	questions := ""
-	firstQuestion := ""
-	initialPrompt := fmt.Sprintf(prompts.START_INTERVIEW_PROMPT, questions, firstQuestion)
+	questions, err := s.repo.GetQuestionsByTopicID(ctx, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get questions by topic ID: %w", err)
+	}
+
+	if len(questions) == 0 {
+		return nil, fmt.Errorf("no questions found for topic ID: %s", topicID)
+	}
+
+	// Format all questions for the prompt
+	var questionList strings.Builder
+	for i, q := range questions {
+		questionList.WriteString(fmt.Sprintf("%d. %s\n", i+1, q.Question))
+	}
+
+	log.Printf("first question=%v", questions[0].Question)
+	// Get the first question for initial prompt
+	firstQuestion := questions[0].Question
+	initialPrompt := fmt.Sprintf(prompts.START_INTERVIEW_PROMPT, questionList.String(), firstQuestion)
 	initialResponse, err := s.generateAIResponse(ctx, initialPrompt)
 	if err != nil {
 		log.Printf("Unable to generate initial question, err=%v", err)
@@ -79,13 +101,15 @@ func (s *Service) StartInterview(ctx context.Context, userID string) (*Interview
 	}
 
 	session := &InterviewSession{
-		SessionID:       sessionID,
-		UserID:          userID,
-		StartTime:       time.Now().Format(time.RFC3339),
-		Status:          StatusActive,
-		InitialQuestion: initialResponse,
-		QuestionCount:   1,
-		MaxQuestions:    MaxInterviewQuestions,
+		SessionID:            sessionID,
+		UserID:               userID,
+		TopicID:              topicID,
+		StartTime:            time.Now().Format(time.RFC3339),
+		Status:               StatusActive,
+		InitialQuestion:      initialResponse,
+		QuestionCount:        1,
+		MaxQuestions:         len(questions), // Only ask questions from database
+		CurrentQuestionIndex: 0,              // Start with first question
 	}
 
 	s.sessionMutex.Lock()
@@ -175,10 +199,58 @@ func (s *Service) ContinueInterview(
 	}
 
 	session.QuestionCount++
+	session.CurrentQuestionIndex++ // Move to next question
+	topicID := session.TopicID
 	s.sessionMutex.Unlock()
 
-	questions := ""
-	continuePrompt := fmt.Sprintf(prompts.CONTINUE_INTERVIEW_PROMPT, questions)
+	// Fetch questions from database for this topic
+	questions, err := s.repo.GetQuestionsByTopicID(ctx, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get questions by topic ID: %w", err)
+	}
+
+	if len(questions) == 0 {
+		return nil, fmt.Errorf("no questions found for topic ID: %s", topicID)
+	}
+
+	log.Printf("\n\nFetched %d questions for continue interview (topic %s)\n", len(questions), topicID)
+
+	// Get current question index from session
+	s.sessionMutex.RLock()
+	currentQuestionIndex := s.activeSessions[sessionID].CurrentQuestionIndex
+	s.sessionMutex.RUnlock()
+
+	// Check if we have more questions to ask
+	if currentQuestionIndex >= len(questions) {
+		// No more questions, end interview
+		s.sessionMutex.Lock()
+		session.Status = "auto_ended"
+		delete(s.activeSessions, sessionID)
+		s.sessionMutex.Unlock()
+
+		summary, err := s.generateInterviewSummaryInternal(ctx, userID, sessionID)
+		if err != nil {
+			return nil, fmt.Errorf("unable to generate auto-end summary: %w", err)
+		}
+
+		return &InterviewResponse{
+			Response:     prompts.COMPLETION_PROMPT,
+			SessionEnded: true,
+			Summary:      summary,
+		}, nil
+	}
+
+	// Format all questions for context and get the specific next question
+	var questionList strings.Builder
+	for i, q := range questions {
+		questionList.WriteString(fmt.Sprintf("%d. %s\n", i+1, q.Question))
+	}
+
+	nextQuestion := questions[currentQuestionIndex].Question
+	continuePrompt := fmt.Sprintf(prompts.CONTINUE_INTERVIEW_PROMPT, questionList.String())
+
+	// Add specific instruction for the next question
+	continuePrompt += fmt.Sprintf("\n\nNow ask question %d: \"%s\"", currentQuestionIndex+1, nextQuestion)
 	prompt, err := s.contextManager.ProcessInteraction(
 		ctx, userID, sessionID, nil, request.Text, continuePrompt, 5,
 	)
