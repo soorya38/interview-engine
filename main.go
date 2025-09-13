@@ -18,6 +18,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
@@ -63,35 +65,6 @@ func main() {
 	// =========================================================================
 	// HTTP Server Setup
 
-	// Create a new ServeMux to register handlers.
-	mux := http.NewServeMux()
-
-	// Register your handlers.
-	mux.HandleFunc("/", homeHandler)
-	mux.HandleFunc("/health", healthCheckHandler)
-
-	// Define the HTTP server with timeouts for production robustness.
-	// Timeouts prevent slow clients from hogging resources.
-	server := &http.Server{
-		Addr:         serverAddr,
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,   // Max time to read the entire request, including the body.
-		WriteTimeout: 10 * time.Second,  // Max time to write the response.
-		IdleTimeout:  120 * time.Second, // Max time for a connection to remain idle.
-	}
-
-	// =========================================================================
-	// Start Server & Handle Graceful Shutdown
-
-	// Create a channel to receive errors from the server goroutine.
-	serverErrors := make(chan error, 1)
-
-	// Start the server in a separate goroutine.
-	go func() {
-		logger.Printf("Server starting on %s", server.Addr)
-		serverErrors <- server.ListenAndServe()
-	}()
-
 	geminiClient, err := gemini.NewGeminiClient(ctx, apiKey)
 	if err != nil {
 		log.Fatalf("Unable to create Gemini client: %v", err)
@@ -114,7 +87,37 @@ func main() {
 		logger.Printf("Unable to create service: %v", err)
 	}
 
+	// Create a new ServeMux to register handlers.
+	mux := http.NewServeMux()
+
+	// Register your handlers.
+	mux.HandleFunc("/", homeHandler)
+	mux.HandleFunc("/health", healthCheckHandler)
+	
+	// Register API handlers
 	handler.MakeHttpHandler(ser, mux)
+
+	// Define the HTTP server with timeouts for production robustness.
+	// Timeouts prevent slow clients from hogging resources.
+	server := &http.Server{
+		Addr:         serverAddr,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,   // Max time to read the entire request, including the body.
+		WriteTimeout: 10 * time.Second,  // Max time to write the response.
+		IdleTimeout:  120 * time.Second, // Max time for a connection to remain idle.
+	}
+
+	// =========================================================================
+	// Start Server & Handle Graceful Shutdown
+
+	// Create a channel to receive errors from the server goroutine.
+	serverErrors := make(chan error, 1)
+
+	// Start the server in a separate goroutine.
+	go func() {
+		logger.Printf("Server starting on %s", server.Addr)
+		serverErrors <- server.ListenAndServe()
+	}()
 
 	// Create a channel to listen for OS signals (e.g., Ctrl+C).
 	shutdown := make(chan os.Signal, 1)

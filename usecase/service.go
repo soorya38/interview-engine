@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"mip/entity"
 	"mip/infrastructure/gemini"
 	"mip/prompts"
 	"mip/repository"
@@ -441,4 +442,24 @@ func (s *Service) extractScore(line string, defaultScore int) int {
 	}
 
 	return defaultScore
+}
+
+// CreateTopic creates a new topic
+func (s *Service) CreateTopic(ctx context.Context, userID, topic string) (string, error) {
+	topicEntity := &entity.Topic{
+		ID:        uuid.New().String(),
+		Topic:     topic,
+		CreatedBy: userID,
+		UpdatedBy: userID,
+	}
+	err := s.repo.CreateTopic(ctx, topicEntity)
+	if err != nil {
+		return "", err
+	}
+	return topicEntity.ID, nil
+}
+
+// GetTopics gets all topics
+func (s *Service) GetTopics(ctx context.Context) ([]*entity.Topic, error) {
+	return s.repo.GetTopics(ctx)
 }

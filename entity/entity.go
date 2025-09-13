@@ -2,17 +2,23 @@ package entity
 
 import "time"
 
+// Question represents a question in the database
 type Question struct {
-	ID        string    `json:"id"`
-	TopicID   string    `json:"topic_id"`
-	Question  string    `json:"question"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string
+	TopicID   string
+	Question  string
+	CreatedBy string
+	UpdatedBy string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
+// Topic represents a topic in the database
 type Topic struct {
-	ID        string    `json:"id"`
-	Topic     string    `json:"topic"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string
+	Topic     string
+	CreatedBy string
+	UpdatedBy string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

@@ -52,11 +52,13 @@ type Reader interface {
 
 type Writer interface {
 	CreateQuestionByTopic(ctx context.Context, topicID string, question string) error
-	CreateTopic(ctx context.Context, topic string) error
+	CreateTopic(ctx context.Context, topic *entity.Topic) error
 }
 
 type Usecase interface {
 	StartInterview(ctx context.Context, userID string) (*InterviewSession, error)
 	ContinueInterview(ctx context.Context, userID, sessionID string, request *InterviewRequest) (*InterviewResponse, error)
 	EndInterview(ctx context.Context, userID, sessionID string) (*InterviewSummary, error)
+	CreateTopic(ctx context.Context, userID, topic string) (string, error)
+	GetTopics(ctx context.Context) ([]*entity.Topic, error)
 }
