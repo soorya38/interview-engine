@@ -36,7 +36,7 @@ func (cm *ContextManager) StoreContext(ctx context.Context, userID, sessionID st
 	// Generate embedding for the conversational turn
 	embedding, err := cm.embeddingService.GenerateEmbedding(ctx, turn.Content)
 	if err != nil {
-		return "", fmt.Errorf("Unable to generate embedding: %w", err)
+		return "", fmt.Errorf("unable to generate embedding: %w", err)
 	}
 
 	// Prepare metadata
@@ -52,7 +52,7 @@ func (cm *ContextManager) StoreContext(ctx context.Context, userID, sessionID st
 	// Store in vector database
 	recordID, err := cm.vectorStore.Store(embedding, turn.Content, userID, sessionID, metadata)
 	if err != nil {
-		return "", fmt.Errorf("Unable to store context: %w", err)
+		return "", fmt.Errorf("unable to store context: %w", err)
 	}
 
 	return recordID, nil
@@ -63,13 +63,13 @@ func (cm *ContextManager) RetrieveContext(ctx context.Context, userID, sessionID
 	// Generate embedding for the query
 	queryEmbedding, err := cm.embeddingService.GenerateEmbedding(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to generate query embedding: %w", err)
+		return nil, fmt.Errorf("unable to generate query embedding: %w", err)
 	}
 
 	// Search for similar contexts
 	results, err := cm.vectorStore.Search(queryEmbedding, userID, sessionID, topK)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to search contexts: %w", err)
+		return nil, fmt.Errorf("unable to search contexts: %w", err)
 	}
 
 	return results, nil
@@ -111,14 +111,14 @@ func (cm *ContextManager) ProcessInteraction(ctx context.Context, userID, sessio
 	if previousTurn != nil {
 		_, err := cm.StoreContext(ctx, userID, sessionID, *previousTurn)
 		if err != nil {
-			return "", fmt.Errorf("Unable to store previous context: %w", err)
+			return "", fmt.Errorf("unable to store previous context: %w", err)
 		}
 	}
 
 	// Step 2: Retrieve relevant context for the current query
 	retrievedContexts, err := cm.RetrieveContext(ctx, userID, sessionID, currentQuery, contextTopK)
 	if err != nil {
-		return "", fmt.Errorf("Unable to retrieve context: %w", err)
+		return "", fmt.Errorf("unable to retrieve context: %w", err)
 	}
 
 	// Step 3: Construct the final prompt

@@ -9,10 +9,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+// EmbeddingService is a service for generating embeddings
 type EmbeddingService struct {
 	client *genai.Client
 }
 
+// NewEmbeddingService creates a new embedding service
 func NewEmbeddingService(ctx context.Context, apiKey string) (*EmbeddingService, error) {
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {

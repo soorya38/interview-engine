@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"mip/infrastructure/gemini"
-	services "mip/repository"
+	"mip/repository"
 	"mip/repository/embeddings"
 	"mip/repository/vectordb"
 	"time"
@@ -18,16 +18,16 @@ func main() {
 	// Initialize services
 	embeddingService, err := embeddings.NewEmbeddingService(ctx, apiKey)
 	if err != nil {
-		log.Fatalf("Unable to create embedding service: %v", err)
+		log.Fatalf("Failed to create embedding service: %v", err)
 	}
 	defer embeddingService.Close()
 
 	vectorStore := vectordb.NewVectorStore()
-	contextManager := services.NewContextManager(embeddingService, vectorStore)
+	contextManager := repository.NewContextManager(embeddingService, vectorStore)
 
 	geminiClient, err := gemini.NewGeminiClient(ctx, apiKey)
 	if err != nil {
-		log.Fatalf("Unable to create Gemini client: %v", err)
+		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
 	defer geminiClient.Client.Close()
 
@@ -53,7 +53,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: Tell me about your experience with Go programming.")
 	fmt.Println()
 
-	aliceAnswer1 := services.ConversationalTurn{
+	aliceAnswer1 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "I have 8 years of experience in Go programming, working mainly on high-performance microservices and distributed systems. I've led teams of 5-10 developers.",
 		Metadata:  map[string]interface{}{"question_topic": "experience", "seniority": "senior"},
@@ -66,7 +66,7 @@ func main() {
 	// Store Alice's first answer
 	recordID1, err := contextManager.StoreContext(ctx, user1ID, session1ID, aliceAnswer1)
 	if err != nil {
-		log.Printf("Warning: Unable to store Alice's first answer: %v", err)
+		log.Printf("Warning: Failed to store Alice's first answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", recordID1)
 	}
@@ -75,7 +75,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: That's impressive! Can you describe your most complex project?")
 	fmt.Println()
 
-	aliceAnswer2 := services.ConversationalTurn{
+	aliceAnswer2 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "My most complex project was building a real-time trading platform that processes 100k transactions per second with sub-millisecond latency requirements.",
 		Metadata:  map[string]interface{}{"question_topic": "complex_project", "domain": "fintech"},
@@ -88,7 +88,7 @@ func main() {
 	// Store Alice's second answer
 	recordID2, err := contextManager.StoreContext(ctx, user1ID, session1ID, aliceAnswer2)
 	if err != nil {
-		log.Printf("Warning: Unable to store Alice's second answer: %v", err)
+		log.Printf("Warning: Failed to store Alice's second answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", recordID2)
 	}
@@ -97,7 +97,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: Fascinating! What architectural patterns did you use for such high-performance requirements?")
 	fmt.Println()
 
-	aliceAnswer3 := services.ConversationalTurn{
+	aliceAnswer3 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "I've architected systems using event sourcing, CQRS patterns, and implemented custom load balancers. I'm also experienced with Kubernetes orchestration.",
 		Metadata:  map[string]interface{}{"question_topic": "architecture", "patterns": "advanced"},
@@ -110,7 +110,7 @@ func main() {
 	// Store Alice's third answer
 	recordID3, err := contextManager.StoreContext(ctx, user1ID, session1ID, aliceAnswer3)
 	if err != nil {
-		log.Printf("Warning: Unable to store Alice's third answer: %v", err)
+		log.Printf("Warning: Failed to store Alice's third answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", recordID3)
 	}
@@ -125,7 +125,7 @@ func main() {
 		ctx, user1ID, session1ID, nil, aliceQuery, systemMessage, 3,
 	)
 	if err != nil {
-		log.Fatalf("Unable to process Alice's interaction: %v", err)
+		log.Fatalf("Failed to process Alice's interaction: %v", err)
 	}
 
 	fmt.Println()
@@ -148,7 +148,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: Hi Bob! Let's start with your background. Tell me about your programming experience.")
 	fmt.Println()
 
-	bobAnswer1 := services.ConversationalTurn{
+	bobAnswer1 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "I have 2 years of experience, mainly working with React and JavaScript. I'm just starting to learn backend technologies.",
 		Metadata:  map[string]interface{}{"question_topic": "experience", "seniority": "junior"},
@@ -161,7 +161,7 @@ func main() {
 	// Store Bob's first answer
 	bobRecordID1, err := contextManager.StoreContext(ctx, user2ID, session2ID, bobAnswer1)
 	if err != nil {
-		log.Printf("Warning: Unable to store Bob's first answer: %v", err)
+		log.Printf("Warning: Failed to store Bob's first answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", bobRecordID1)
 	}
@@ -170,7 +170,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: Great! Can you tell me about a project you're particularly proud of?")
 	fmt.Println()
 
-	bobAnswer2 := services.ConversationalTurn{
+	bobAnswer2 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "My biggest project was building a responsive e-commerce website with React, Redux, and integrating with REST APIs. I handled the entire frontend.",
 		Metadata:  map[string]interface{}{"question_topic": "project", "domain": "ecommerce"},
@@ -183,7 +183,7 @@ func main() {
 	// Store Bob's second answer
 	bobRecordID2, err := contextManager.StoreContext(ctx, user2ID, session2ID, bobAnswer2)
 	if err != nil {
-		log.Printf("Warning: Unable to store Bob's second answer: %v", err)
+		log.Printf("Warning: Failed to store Bob's second answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", bobRecordID2)
 	}
@@ -192,7 +192,7 @@ func main() {
 	fmt.Println("🤖 INTERVIEWER: That sounds like a solid project! What are your career goals and interests?")
 	fmt.Println()
 
-	bobAnswer3 := services.ConversationalTurn{
+	bobAnswer3 := repository.ConversationalTurn{
 		Type:      "user_answer",
 		Content:   "I'm interested in learning more about full-stack development. I've been studying Node.js and Express in my free time.",
 		Metadata:  map[string]interface{}{"question_topic": "interests", "learning": "backend"},
@@ -205,7 +205,7 @@ func main() {
 	// Store Bob's third answer
 	bobRecordID3, err := contextManager.StoreContext(ctx, user2ID, session2ID, bobAnswer3)
 	if err != nil {
-		log.Printf("Warning: Unable to store Bob's third answer: %v", err)
+		log.Printf("Warning: Failed to store Bob's third answer: %v", err)
 	} else {
 		fmt.Printf("   [System: Stored interaction with ID: %s]\n", bobRecordID3)
 	}
@@ -220,7 +220,7 @@ func main() {
 		ctx, user2ID, session2ID, nil, bobQuery, systemMessage, 3,
 	)
 	if err != nil {
-		log.Fatalf("Unable to process Bob's interaction: %v", err)
+		log.Fatalf("Failed to process Bob's interaction: %v", err)
 	}
 
 	fmt.Println()
@@ -245,12 +245,12 @@ func main() {
 
 	aliceHistory, err := contextManager.GetConversationHistory(user1ID, session1ID)
 	if err != nil {
-		log.Fatalf("Unable to get Alice's conversation history: %v", err)
+		log.Fatalf("Failed to get Alice's conversation history: %v", err)
 	}
 
 	bobHistory, err := contextManager.GetConversationHistory(user2ID, session2ID)
 	if err != nil {
-		log.Fatalf("Unable to get Bob's conversation history: %v", err)
+		log.Fatalf("Failed to get Bob's conversation history: %v", err)
 	}
 
 	fmt.Printf("📊 Alice's stored conversation context (%d interactions):\n", len(aliceHistory))
@@ -273,7 +273,7 @@ func main() {
 	fmt.Println("   Scenario: Bob tries to search for Alice's highly specific advanced topics...")
 	crossUserResults, err := contextManager.RetrieveContext(ctx, user2ID, session2ID, "real-time trading platform 100k transactions per second CQRS event sourcing", 5)
 	if err != nil {
-		log.Fatalf("Unable to test cross-user retrieval: %v", err)
+		log.Fatalf("Failed to test cross-user retrieval: %v", err)
 	}
 
 	fmt.Printf("   🔍 Bob searching for Alice's specific topics: Found %d results\n", len(crossUserResults))
@@ -309,7 +309,7 @@ func main() {
 	fmt.Println("   Scenario: Bob searches for his own topics...")
 	bobResults, err := contextManager.RetrieveContext(ctx, user2ID, session2ID, "React and frontend development", 5)
 	if err != nil {
-		log.Fatalf("Unable to retrieve Bob's context: %v", err)
+		log.Fatalf("Failed to retrieve Bob's context: %v", err)
 	}
 
 	fmt.Printf("   🔍 Bob searching for 'React and frontend development': Found %d results\n", len(bobResults))
@@ -325,7 +325,7 @@ func main() {
 	fmt.Println("   Scenario: Bob searches for completely unrelated advanced topics...")
 	unrelatedResults, err := contextManager.RetrieveContext(ctx, user2ID, session2ID, "Kubernetes orchestration custom load balancers", 3)
 	if err != nil {
-		log.Fatalf("Unable to test unrelated search: %v", err)
+		log.Fatalf("Failed to test unrelated search: %v", err)
 	}
 
 	fmt.Printf("   🔍 Bob searching for 'Kubernetes orchestration': Found %d results\n", len(unrelatedResults))
@@ -345,7 +345,7 @@ func main() {
 	fmt.Println("   Scenario: Alice searches for her advanced topics...")
 	aliceResults, err := contextManager.RetrieveContext(ctx, user1ID, session1ID, "high-performance systems and architecture", 5)
 	if err != nil {
-		log.Fatalf("Unable to retrieve Alice's context: %v", err)
+		log.Fatalf("Failed to retrieve Alice's context: %v", err)
 	}
 
 	fmt.Printf("   🔍 Alice searching for 'high-performance systems': Found %d results\n", len(aliceResults))
