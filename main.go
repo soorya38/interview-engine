@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -24,9 +25,34 @@ func main() {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
 	// =========================================================================
+	// MySQL Configuration
+	user := os.Getenv("DB_USER")
+	pass := os.Getenv("DB_PASS")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	name := os.Getenv("DB_NAME")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", user, pass, host, port, name)
+
+	var err error
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal("Error opening DB:", err)
+	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	if err := db.Ping(); err != nil {
+		log.Fatal("Error connecting to DB:", err)
+	}
+	log.Println("Connected to MySQL")
+
+	// =========================================================================
 	// Configuration
 	// It's best practice to configure the server via environment variables.
-	port := os.Getenv("PORT")
+	port = os.Getenv("PORT")
 	if port == "" {
 		port = "8080" // Default port if not specified
 	}
@@ -82,7 +108,8 @@ func main() {
 	vectorStore := vectordb.NewVectorStore()
 	contextManager := repository.NewContextManager(embeddingService, vectorStore)
 
-	ser := usecase.NewService(embeddingService, vectorStore, geminiClient, contextManager, modelName)
+	repo := repository.NewRepository(db)
+	ser := usecase.NewService(embeddingService, vectorStore, geminiClient, contextManager, modelName, repo)
 	if err != nil {
 		logger.Printf("Unable to create service: %v", err)
 	}

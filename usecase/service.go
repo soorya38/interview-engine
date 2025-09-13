@@ -41,6 +41,7 @@ type Service struct {
 	// In-memory session storage
 	activeSessions map[string]*InterviewSession
 	sessionMutex   sync.RWMutex
+	repo           Repository
 }
 
 // NewService creates a new Service
@@ -50,6 +51,7 @@ func NewService(
 	geminiClient *gemini.Gemini,
 	contextManager *repository.ContextManager,
 	modelName string,
+	repo Repository,
 ) *Service {
 	return &Service{
 		embeddingService: embeddingService,
@@ -58,6 +60,7 @@ func NewService(
 		contextManager:   contextManager,
 		modelName:        modelName,
 		activeSessions:   make(map[string]*InterviewSession),
+		repo:             repo,
 	}
 }
 

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"mip/entity"
 )
 
 // InterviewSession represents an active interview session
@@ -37,6 +38,21 @@ type InterviewSummary struct {
 	PracticePoints     []string `json:"practice_points"`
 	ContextualRelevant bool     `json:"contextual_relevant"` // Whether responses were relevant
 	OffTopicCount      int      `json:"off_topic_count"`     // Number of off-topic responses
+}
+
+type Repository interface {
+	Reader
+	Writer
+}
+
+type Reader interface {
+	GetQuestionsByTopicID(ctx context.Context, topicID string) (*entity.Question, error)
+	GetTopics(ctx context.Context) ([]*entity.Topic, error)
+}
+
+type Writer interface {
+	CreateQuestionByTopic(ctx context.Context, topicID string, question string) error
+	CreateTopic(ctx context.Context, topic string) error
 }
 
 type Usecase interface {
