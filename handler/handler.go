@@ -170,6 +170,82 @@ func (h *Handler) createOrFetchTopics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// createOrFetchQuestions handles creating a new question or fetching all questions
+func (h *Handler) createOrFetchQuestions(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		questions, err := h.usecase.GetQuestions(r.Context())
+		if err != nil {
+			http.Error(w, "unable to fetch questions", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(questions); err != nil {
+			log.Printf("unable to encode questions: %v", err)
+			http.Error(w, "unable to encode questions", http.StatusInternalServerError)
+			return
+		}
+		return
+	} else if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		http.Error(w, "User ID required in X-User-ID header", http.StatusBadRequest)
+		return
+	}
+	var request presenter.Question
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	questionID, err := h.usecase.CreateQuestion(r.Context(), userID, request.TopicID, request.Question)
+	if err != nil {
+		http.Error(w, "unable to create question", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(questionID); err != nil {
+		log.Printf("unable to encode summary: %v", err)
+		http.Error(w, "unable to encode summary", http.StatusInternalServerError)
+		return
+	}
+}
+
+// getQuestionByID handles getting a question by ID
+func (h *Handler) getQuestionByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/v1/questions/")
+	id := path
+	if id == "" {
+		http.Error(w, "Question ID required", http.StatusBadRequest)
+		return
+	}
+
+	question, err := h.usecase.GetQuestionByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "unable to get question", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(question); err != nil {
+		log.Printf("unable to encode question: %v", err)
+		http.Error(w, "unable to encode question", http.StatusInternalServerError)
+		return
+	}
+}
+
 // MakeHttpHandler registers the handlers for the given usecase and mux
 func MakeHttpHandler(uc usecase.Usecase, mux *http.ServeMux) {
 	h := &Handler{usecase: uc}
@@ -178,4 +254,6 @@ func MakeHttpHandler(uc usecase.Usecase, mux *http.ServeMux) {
 	mux.HandleFunc("/v1/interview/", h.continueInterview)
 	mux.HandleFunc("/v1/interview/end/", h.endInterview)
 	mux.HandleFunc("/v1/topics", h.createOrFetchTopics)
+	mux.HandleFunc("/v1/questions/", h.getQuestionByID)
+	mux.HandleFunc("/v1/questions", h.createOrFetchQuestions)
 }

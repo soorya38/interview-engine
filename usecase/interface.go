@@ -48,11 +48,14 @@ type Repository interface {
 type Reader interface {
 	GetQuestionsByTopicID(ctx context.Context, topicID string) (*entity.Question, error)
 	GetTopics(ctx context.Context) ([]*entity.Topic, error)
+	GetQuestions(ctx context.Context) ([]*entity.Question, error)
+	GetQuestionByID(ctx context.Context, id string) (*entity.Question, error)
 }
 
 type Writer interface {
 	CreateQuestionByTopic(ctx context.Context, topicID string, question string) error
 	CreateTopic(ctx context.Context, topic *entity.Topic) error
+	CreateQuestion(ctx context.Context, question *entity.Question) error
 }
 
 type Usecase interface {
@@ -61,4 +64,7 @@ type Usecase interface {
 	EndInterview(ctx context.Context, userID, sessionID string) (*InterviewSummary, error)
 	CreateTopic(ctx context.Context, userID, topic string) (string, error)
 	GetTopics(ctx context.Context) ([]*entity.Topic, error)
+	CreateQuestion(ctx context.Context, userID, topicID, question string) (string, error)
+	GetQuestions(ctx context.Context) ([]*entity.Question, error)
+	GetQuestionByID(ctx context.Context, id string) (*entity.Question, error)
 }

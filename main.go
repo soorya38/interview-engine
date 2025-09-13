@@ -93,7 +93,7 @@ func main() {
 	// Register your handlers.
 	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("/health", healthCheckHandler)
-	
+
 	// Register API handlers
 	handler.MakeHttpHandler(ser, mux)
 

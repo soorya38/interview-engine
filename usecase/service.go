@@ -463,3 +463,29 @@ func (s *Service) CreateTopic(ctx context.Context, userID, topic string) (string
 func (s *Service) GetTopics(ctx context.Context) ([]*entity.Topic, error) {
 	return s.repo.GetTopics(ctx)
 }
+
+// CreateQuestion creates a new question
+func (s *Service) CreateQuestion(ctx context.Context, userID, topicID, question string) (string, error) {
+	questionEntity := &entity.Question{
+		ID:        uuid.New().String(),
+		TopicID:   topicID,
+		Question:  question,
+		CreatedBy: userID,
+		UpdatedBy: userID,
+	}
+	err := s.repo.CreateQuestion(ctx, questionEntity)
+	if err != nil {
+		return "", err
+	}
+	return questionEntity.ID, nil
+}
+
+// GetQuestions gets all questions
+func (s *Service) GetQuestions(ctx context.Context) ([]*entity.Question, error) {
+	return s.repo.GetQuestions(ctx)
+}
+
+// GetQuestionByID gets a question by ID
+func (s *Service) GetQuestionByID(ctx context.Context, id string) (*entity.Question, error) {
+	return s.repo.GetQuestionByID(ctx, id)
+}
