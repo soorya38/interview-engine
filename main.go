@@ -1,28 +1,147 @@
+// main.go
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"mip/handler"
 	"mip/infrastructure/gemini"
+	"mip/repository"
+	"mip/repository/embeddings"
+	"mip/repository/vectordb"
+	"mip/usecase"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
 	ctx := context.Background()
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
+	// =========================================================================
+	// Configuration
+	// It's best practice to configure the server via environment variables.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port if not specified
+	}
+	serverAddr := ":" + port
 	apiKey := "AIzaSyA1yxig9DxbwXFopmdTt4SY9CeOZAcRwjc"
+	modelName := "gemini-2.0-flash-001"
+
+	// =========================================================================
+	// HTTP Server Setup
+
+	// Create a new ServeMux to register handlers.
+	mux := http.NewServeMux()
+
+	// Register your handlers.
+	mux.HandleFunc("/", homeHandler)
+	mux.HandleFunc("/health", healthCheckHandler)
+
+	// Define the HTTP server with timeouts for production robustness.
+	// Timeouts prevent slow clients from hogging resources.
+	server := &http.Server{
+		Addr:         serverAddr,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,   // Max time to read the entire request, including the body.
+		WriteTimeout: 10 * time.Second,  // Max time to write the response.
+		IdleTimeout:  120 * time.Second, // Max time for a connection to remain idle.
+	}
+
+	// =========================================================================
+	// Start Server & Handle Graceful Shutdown
+
+	// Create a channel to receive errors from the server goroutine.
+	serverErrors := make(chan error, 1)
+
+	// Start the server in a separate goroutine.
+	go func() {
+		logger.Printf("Server starting on %s", server.Addr)
+		serverErrors <- server.ListenAndServe()
+	}()
 
 	geminiClient, err := gemini.NewGeminiClient(ctx, apiKey)
 	if err != nil {
-		return
+		log.Fatalf("Unable to create Gemini client: %v", err)
 	}
 	defer geminiClient.Client.Close()
 
-	resp, err := geminiClient.LLMCall(
-		ctx,
-		"gemini-1.5-flash",
-		"Give grammer score for the following text from 1 to 10(number only): I is soorya",
-	)
+	// Initialize services
+	embeddingService, err := embeddings.NewEmbeddingService(ctx, apiKey)
 	if err != nil {
+		log.Fatalf("Unable to create embedding service: %v", err)
+	}
+	defer embeddingService.Close()
+
+	vectorStore := vectordb.NewVectorStore()
+	contextManager := repository.NewContextManager(embeddingService, vectorStore)
+
+	ser := usecase.NewService(embeddingService, vectorStore, geminiClient, contextManager, modelName)
+	if err != nil {
+		logger.Printf("Unable to create service: %v", err)
+	}
+
+	handler.MakeHttpHandler(ser, mux)
+
+	// Create a channel to listen for OS signals (e.g., Ctrl+C).
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block until a server error or a shutdown signal is received.
+	select {
+	case err := <-serverErrors:
+		// Don't log http.ErrServerClosed as it's an expected error on shutdown.
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatalf("Server error: %v", err)
+		}
+
+	case sig := <-shutdown:
+		logger.Printf("Shutdown signal received: %v. Starting graceful shutdown...", sig)
+
+		// Create a context with a timeout for the shutdown process.
+		// This gives active connections time to finish their work.
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		// Attempt to gracefully shut down the server.
+		if err := server.Shutdown(ctx); err != nil {
+			logger.Printf("Graceful shutdown Unable: %v. Forcing exit.", err)
+			// Close the server immediately if Shutdown fails.
+			if closeErr := server.Close(); closeErr != nil {
+				logger.Printf("Unable to close server: %v", closeErr)
+			}
+		} else {
+			logger.Println("Server gracefully stopped.")
+		}
+	}
+}
+
+// homeHandler is a simple handler for the root path.
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	// Only allow GET requests to this endpoint.
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	fmt.Println(resp)
+	// For security, prevent path traversal attacks.
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	fmt.Fprintf(w, "Welcome to the Go Production Server! 🚀")
+}
+
+// healthCheckHandler reports the status of the server.
+// This is crucial for load balancers and container orchestrators (like Kubernetes).
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	// In a real app, you might check DB connections or other dependencies here.
+	fmt.Fprintln(w, `{"status": "ok"}`)
 }
