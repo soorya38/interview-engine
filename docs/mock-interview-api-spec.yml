@@ -1,0 +1,303 @@
+openapi: 3.0.3
+info:
+  title: Interview API
+  version: 1.0.0
+  description: API for managing interview sessions, topics, and questions.
+
+servers:
+  - url: https://api.example.com
+
+components:
+  securitySchemes:
+    UserIDHeader:
+      type: apiKey
+      in: header
+      name: X-User-ID
+
+  parameters:
+    UserIDHeader:
+      name: X-User-ID
+      in: header
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    InterviewSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        topic_id:
+          type: string
+          format: uuid
+        start_time:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, ended]
+        initial_question:
+          type: string
+        question_count:
+          type: integer
+        max_questions:
+          type: integer
+        current_question_index:
+          type: integer
+
+    InterviewResponse:
+      type: object
+      properties:
+        response:
+          type: string
+
+    InterviewEndResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        session_ended:
+          type: boolean
+        summary:
+          type: object
+          properties:
+            strong_points:
+              type: array
+              items:
+                type: string
+            weak_points:
+              type: array
+              items:
+                type: string
+            grammatical_score:
+              type: integer
+            technical_score:
+              type: integer
+            practice_points:
+              type: array
+              items:
+                type: string
+            contextual_relevant:
+              type: boolean
+            off_topic_count:
+              type: integer
+
+    Topic:
+      type: object
+      properties:
+        topic_id:
+          type: string
+          format: uuid
+        topic:
+          type: string
+
+    Question:
+      type: object
+      properties:
+        ID:
+          type: string
+          format: uuid
+        TopicID:
+          type: string
+          format: uuid
+        Question:
+          type: string
+        CreatedBy:
+          type: string
+        UpdatedBy:
+          type: string
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /v1/interview/start:
+    post:
+      summary: Start a new interview
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+        - name: X-Topic-ID
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Interview session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewSession'
+
+  /v1/interview/{session_id}:
+    post:
+      summary: Continue an interview session
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+      responses:
+        '200':
+          description: Next interview response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewResponse'
+
+  /v1/interview/end/{session_id}:
+    post:
+      summary: End an interview session
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Interview session ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewEndResponse'
+
+  /v1/topic:
+    post:
+      summary: Create a new topic
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+      responses:
+        '200':
+          description: Topic created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topic_id:
+                    type: string
+                    format: uuid
+
+  /v1/topics:
+    get:
+      summary: List all topics
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+      responses:
+        '200':
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+
+  /v1/topics/{topic_id}:
+    get:
+      summary: Get a topic by ID
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+        - name: topic_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Topic details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+
+  /v1/questions:
+    post:
+      summary: Create a question
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic_id:
+                  type: string
+                  format: uuid
+                question:
+                  type: string
+      responses:
+        '200':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  question_id:
+                    type: string
+                    format: uuid
+    get:
+      summary: List all questions
+      responses:
+        '200':
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+
+  /v1/questions/{question_id}:
+    get:
+      summary: Get question by ID
+      parameters:
+        - $ref: '#/components/parameters/UserIDHeader'
+        - name: question_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Question details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'

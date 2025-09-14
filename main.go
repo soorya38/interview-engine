@@ -22,6 +22,27 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// corsMiddleware adds CORS headers to allow all origins
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-ID, X-Topic-ID")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight OPTIONS request
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Call the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	ctx := context.Background()
 	logger := log.New(os.Stdout, "", log.LstdFlags)
@@ -97,11 +118,14 @@ func main() {
 	// Register API handlers
 	handler.MakeHttpHandler(ser, mux)
 
+	// Wrap mux with CORS middleware
+	corsHandler := corsMiddleware(mux)
+
 	// Define the HTTP server with timeouts for production robustness.
 	// Timeouts prevent slow clients from hogging resources.
 	server := &http.Server{
 		Addr:         serverAddr,
-		Handler:      mux,
+		Handler:      corsHandler,
 		ReadTimeout:  5 * time.Second,   // Max time to read the entire request, including the body.
 		WriteTimeout: 10 * time.Second,  // Max time to write the response.
 		IdleTimeout:  120 * time.Second, // Max time for a connection to remain idle.
