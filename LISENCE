@@ -1,0 +1,57 @@
+interview-engine - Confidential & Proprietary Source Code License
+
+Copyright (c) 2025 soorya-akilesh. All Rights Reserved.
+
+***
+
+**NOTICE TO ALL USERS**
+
+This repository contains proprietary and confidential source code ("Source Code") owned by soorya-akilesh ("the Company").
+This Source Code is a valuable trade secret of soorya-akilesh.
+
+Access to and use of this Source Code is strictly limited and is governed by the terms of this License Agreement ("Agreement"). By accessing, viewing, cloning, or otherwise interacting with this Source Code, you ("Authorized User") acknowledge that you have read, understood, and agree to be bound by the terms and conditions set forth herein.
+
+If you have not been expressly granted access to this repository by the Company, you are not an Authorized User. You must immediately cease all access, delete any copies of the Source Code in your possession, and notify the Company.
+
+**1. GRANT OF LICENSE**
+
+The Company grants the Authorized User a limited, non-exclusive, non-transferable, revocable license to access and use the Source Code solely for the purpose of performing your duties as an employee, contractor, or otherwise authorized agent of the Company, or for internal evaluation purposes as explicitly permitted by a separate written agreement with the Company (such as a Non-Disclosure Agreement).
+
+This license is granted on a "need-to-know" basis and is contingent upon your continued compliance with this Agreement and any other agreements between you and the Company.
+
+**2. RESTRICTIONS AND OBLIGATIONS**
+
+As an Authorized User, you SHALL NOT:
+
+a. Disclose, publish, distribute, sublicense, transfer, or otherwise make available the Source Code, in whole or in part, to any third party without the prior express written consent of the Company.
+b. Use the Source Code for any purpose other than the specific, authorized purpose for which you were granted access. This includes, without limitation, personal projects or any work for a third party.
+c. Create copies of the Source Code, except for temporary local copies on your machine that are strictly necessary to perform your authorized duties. All such copies must be deleted upon termination of this license.
+d. Modify, adapt, translate, decompile, reverse engineer, or create derivative works from the Source Code, except as required to perform your authorized duties.
+e. Remove, alter, or obscure any copyright, trademark, or other proprietary notices contained in the Source Code.
+f. Use any knowledge or information gained from the Source Code to develop or aid in the development of any product or service that competes with the Company's products or services.
+
+**3. OWNERSHIP OF INTELLECTUAL PROPERTY**
+
+All rights, title, and interest in and to the Source Code, including all copyrights, patents, trade secrets, and other intellectual property rights, are and will remain the sole and exclusive property of the Company.
+
+Any modifications, enhancements, bug fixes, contributions, or derivative works you create based on the Source Code ("Contributions") shall be the sole and exclusive property of the Company from the moment of their creation. You hereby irrevocably assign to the Company all rights, title, and interest in and to such Contributions and agree to execute any documents necessary to perfect the Company's ownership.
+
+**4. CONFIDENTIALITY**
+
+You acknowledge that the Source Code is highly confidential. You agree to treat the Source Code with the highest degree of care and to take all reasonable steps to protect it from unauthorized access, use, or disclosure, consistent with your obligations under any non-disclosure agreement with the Company.
+
+**5. DISCLAIMER OF WARRANTY**
+
+THE SOURCE CODE IS PROVIDED "AS IS" AND "WITH ALL FAULTS," WITHOUT WARRANTY OF ANY KIND. THE COMPANY EXPRESSLY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+**6. LIMITATION OF LIABILITY**
+
+IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE SOURCE CODE.
+
+**7. TERMINATION**
+
+This license shall terminate immediately and automatically upon: (i) the termination of your employment, contract, or other authorized relationship with the Company; (ii) your breach of any term of this Agreement; or (iii) at the sole discretion of the Company, with or without notice. Upon termination, you must immediately cease all use of the Source Code and destroy all copies in your possession or control.
+
+**8. GOVERNING LAW**
+
+This Agreement shall be governed by and construed in accordance with the laws of [Your Governing Jurisdiction], without giving effect to any choice of law or conflict of law provisions.
