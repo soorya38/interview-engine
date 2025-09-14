@@ -7,15 +7,17 @@ import (
 
 // InterviewSession represents an active interview session
 type InterviewSession struct {
-	SessionID       string `json:"session_id"`
-	UserID          string `json:"user_id"`
-	TopicID         string `json:"topic_id"`
-	StartTime       string `json:"start_time"`
-	Status          string `json:"status"`           // "active", "ended", "auto_ended"
-	InitialQuestion string `json:"initial_question"` // First question from AI
-	QuestionCount   int    `json:"question_count"`   // Number of questions asked so far
-	MaxQuestions    int    `json:"max_questions"`    // Maximum questions allowed
-	CurrentQuestionIndex int `json:"current_question_index"` // Index of current question in the list
+	SessionID               string `json:"session_id"`
+	UserID                  string `json:"user_id"`
+	TopicID                 string `json:"topic_id"`
+	StartTime               string `json:"start_time"`
+	Status                  string `json:"status"`                    // "active", "ended", "auto_ended"
+	InitialQuestion         string `json:"initial_question"`          // First question from AI
+	QuestionCount           int    `json:"question_count"`            // Number of questions asked so far
+	MaxQuestions            int    `json:"max_questions"`             // Maximum questions allowed
+	CurrentQuestionIndex    int    `json:"current_question_index"`    // Index of current question in the list
+	IntroQuestionsCompleted int    `json:"intro_questions_completed"` // Number of intro questions completed
+	IsInDatabaseQuestions   bool   `json:"is_in_database_questions"`  // Whether we're asking database questions
 }
 
 // InterviewRequest represents a request to continue an interview

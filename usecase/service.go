@@ -32,6 +32,14 @@ const (
 	QuestionTypeAI = "ai_question"
 )
 
+// Predefined introductory questions
+var IntroductoryQuestions = []string{
+	"Hello! Welcome to the interview. Could you please tell me your name?",
+	"What are your hobbies or interests outside of work?",
+	"Could you briefly describe your current job role or the type of work you do?",
+	"How many years of experience do you have in your field?",
+}
+
 // Service is the main service for the conversational context system
 type Service struct {
 	embeddingService *embeddings.EmbeddingService
@@ -65,12 +73,6 @@ func NewService(
 	}
 }
 
-// countSentences counts the number of sentences in a text
-func countSentences(text string) int {
-	parts := strings.Split(text, "\n")
-	return len(parts)
-}
-
 // StartInterview creates a new interview session and generates initial question
 func (s *Service) StartInterview(ctx context.Context, userID, topicID string) (*InterviewSession, error) {
 	sessionID := uuid.New().String()
@@ -83,33 +85,27 @@ func (s *Service) StartInterview(ctx context.Context, userID, topicID string) (*
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("no questions found for topic ID: %s", topicID)
 	}
+	log.Printf("questionsCount=%v", len(questions))
 
-	// Format all questions for the prompt
-	var questionList strings.Builder
-	for i, q := range questions {
-		questionList.WriteString(fmt.Sprintf("%d. %s\n", i+1, q.Question))
-	}
+	// Start with the first introductory question
+	firstIntroQuestion := IntroductoryQuestions[0]
+	log.Printf("Starting interview with introductory question: %s", firstIntroQuestion)
 
-	log.Printf("first question=%v", questions[0].Question)
-	// Get the first question for initial prompt
-	firstQuestion := questions[0].Question
-	initialPrompt := fmt.Sprintf(prompts.START_INTERVIEW_PROMPT, questionList.String(), firstQuestion)
-	initialResponse, err := s.generateAIResponse(ctx, initialPrompt)
-	if err != nil {
-		log.Printf("Unable to generate initial question, err=%v", err)
-		return nil, fmt.Errorf("unable to generate initial question, err=%w", err)
-	}
+	// Use the introductory question directly
+	initialResponse := firstIntroQuestion
 
 	session := &InterviewSession{
-		SessionID:            sessionID,
-		UserID:               userID,
-		TopicID:              topicID,
-		StartTime:            time.Now().Format(time.RFC3339),
-		Status:               StatusActive,
-		InitialQuestion:      initialResponse,
-		QuestionCount:        1,
-		MaxQuestions:         len(questions), // Only ask questions from database
-		CurrentQuestionIndex: 0,              // Start with first question
+		SessionID:               sessionID,
+		UserID:                  userID,
+		TopicID:                 topicID,
+		StartTime:               time.Now().Format(time.RFC3339),
+		Status:                  StatusActive,
+		InitialQuestion:         initialResponse,
+		QuestionCount:           1,
+		MaxQuestions:            len(IntroductoryQuestions) + len(questions), // Intro + database questions
+		CurrentQuestionIndex:    0,                                           // Start with first question
+		IntroQuestionsCompleted: 0,                                           // No intro questions completed yet
+		IsInDatabaseQuestions:   false,                                       // Starting with intro questions
 	}
 
 	s.sessionMutex.Lock()
@@ -199,75 +195,93 @@ func (s *Service) ContinueInterview(
 	}
 
 	session.QuestionCount++
-	session.CurrentQuestionIndex++ // Move to next question
 	topicID := session.TopicID
-	s.sessionMutex.Unlock()
 
-	// Fetch questions from database for this topic
-	questions, err := s.repo.GetQuestionsByTopicID(ctx, topicID)
+	// Store user response in context
+	_, err = s.contextManager.StoreContext(ctx, userID, sessionID, repository.ConversationalTurn{
+		Type:      "user_answer",
+		Content:   request.Text,
+		Metadata:  map[string]interface{}{"session_id": sessionID, "question_number": session.QuestionCount - 1},
+		Timestamp: time.Now(),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to get questions by topic ID: %w", err)
+		log.Printf("Warning: unable to store user context: %v", err)
 	}
 
-	if len(questions) == 0 {
-		return nil, fmt.Errorf("no questions found for topic ID: %s", topicID)
-	}
+	var nextQuestion string
+	var isLastQuestion bool
 
-	log.Printf("\n\nFetched %d questions for continue interview (topic %s)\n", len(questions), topicID)
+	// Determine what type of question to ask next
+	if !session.IsInDatabaseQuestions {
+		// Still in introductory questions phase
+		session.IntroQuestionsCompleted++
 
-	// Get current question index from session
-	s.sessionMutex.RLock()
-	currentQuestionIndex := s.activeSessions[sessionID].CurrentQuestionIndex
-	s.sessionMutex.RUnlock()
+		if session.IntroQuestionsCompleted < len(IntroductoryQuestions) {
+			// Ask next introductory question
+			nextQuestion = IntroductoryQuestions[session.IntroQuestionsCompleted]
+			log.Printf("Asking intro question %d: %s", session.IntroQuestionsCompleted+1, nextQuestion)
+		} else {
+			// Move to database questions
+			session.IsInDatabaseQuestions = true
+			session.CurrentQuestionIndex = 0
 
-	// Check if we have more questions to ask
-	if currentQuestionIndex >= len(questions) {
-		// No more questions, end interview
-		s.sessionMutex.Lock()
-		session.Status = "auto_ended"
-		delete(s.activeSessions, sessionID)
-		s.sessionMutex.Unlock()
+			// Fetch questions from database
+			questions, err := s.repo.GetQuestionsByTopicID(ctx, topicID)
+			if err != nil {
+				s.sessionMutex.Unlock()
+				return nil, fmt.Errorf("unable to get questions by topic ID: %w", err)
+			}
 
-		summary, err := s.generateInterviewSummaryInternal(ctx, userID, sessionID)
+			if len(questions) == 0 {
+				s.sessionMutex.Unlock()
+				return nil, fmt.Errorf("no questions found for topic ID: %s", topicID)
+			}
+
+			nextQuestion = questions[0].Question
+			log.Printf("Moving to database questions. Asking DB question 1: %s", nextQuestion)
+		}
+	} else {
+		// In database questions phase
+		session.CurrentQuestionIndex++
+
+		// Fetch questions from database
+		questions, err := s.repo.GetQuestionsByTopicID(ctx, topicID)
 		if err != nil {
-			return nil, fmt.Errorf("unable to generate auto-end summary: %w", err)
+			s.sessionMutex.Unlock()
+			return nil, fmt.Errorf("unable to get questions by topic ID: %w", err)
 		}
 
-		return &InterviewResponse{
-			Response:     prompts.COMPLETION_PROMPT,
-			SessionEnded: true,
-			Summary:      summary,
-		}, nil
+		if session.CurrentQuestionIndex >= len(questions) {
+			// No more questions, end interview
+			session.Status = "auto_ended"
+			delete(s.activeSessions, sessionID)
+			s.sessionMutex.Unlock()
+
+			summary, err := s.generateInterviewSummaryInternal(ctx, userID, sessionID)
+			if err != nil {
+				return nil, fmt.Errorf("unable to generate auto-end summary: %w", err)
+			}
+
+			return &InterviewResponse{
+				Response:     prompts.COMPLETION_PROMPT,
+				SessionEnded: true,
+				Summary:      summary,
+			}, nil
+		}
+
+		nextQuestion = questions[session.CurrentQuestionIndex].Question
+		isLastQuestion = session.CurrentQuestionIndex == len(questions)-1
+		log.Printf("Asking DB question %d: %s", session.CurrentQuestionIndex+1, nextQuestion)
 	}
 
-	// Format all questions for context and get the specific next question
-	var questionList strings.Builder
-	for i, q := range questions {
-		questionList.WriteString(fmt.Sprintf("%d. %s\n", i+1, q.Question))
-	}
+	s.sessionMutex.Unlock()
 
-	nextQuestion := questions[currentQuestionIndex].Question
-	continuePrompt := fmt.Sprintf(prompts.CONTINUE_INTERVIEW_PROMPT, questionList.String())
-
-	// Add specific instruction for the next question
-	continuePrompt += fmt.Sprintf("\n\nNow ask question %d: \"%s\"", currentQuestionIndex+1, nextQuestion)
-	prompt, err := s.contextManager.ProcessInteraction(
-		ctx, userID, sessionID, nil, request.Text, continuePrompt, 5,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("unable to process interaction: %w", err)
-	}
-
+	// Prepare the response
 	var aiResponse string
-	if session.QuestionCount >= session.MaxQuestions {
-		finalPrompt := fmt.Sprintf(prompts.FINAL_QUESTION_PROMPT, prompt)
-		aiResponse, err = s.generateAIResponse(ctx, finalPrompt)
+	if isLastQuestion {
+		aiResponse = nextQuestion + " This is the last question of the interview."
 	} else {
-		aiResponse, err = s.generateAIResponse(ctx, prompt)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to generate AI response: %w", err)
+		aiResponse = nextQuestion
 	}
 
 	aiTurn := repository.ConversationalTurn{

@@ -19,7 +19,9 @@ services:
       retries: 10
 
   go-app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: go-app
     depends_on:
       mysql:
