@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, verifyPassword, generateToken, verifyToken, type JWTPayload } from "./auth";
 import { conductInterview, calculateTotalScore, getGrade } from "./gemini";
-import { loginSchema, insertUserSchema, insertTopicSchema, insertQuestionSchema, updateProfileSchema } from "@shared/schema";
+import { loginSchema, insertUserSchema, insertTopicCategorySchema, insertTestSchema, insertQuestionSchema, updateProfileSchema } from "@shared/schema";
 
 // Extend Express Request to include user
 declare global {
@@ -94,10 +94,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Topics routes
-  app.get("/api/topics", authMiddleware, async (req, res) => {
+  // Topic Categories routes
+  app.get("/api/topic-categories", authMiddleware, async (req, res) => {
     try {
-      const allTopics = await storage.getAllTopics();
+      const allTopicCategories = await storage.getAllTopicCategories();
       
       // Get all users once to avoid N+1 queries
       const allUsers = await storage.getAllUsers();
@@ -107,57 +107,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map((user) => user.id)
       );
       
-      // Filter topics to only show those created by admin/instructor users
-      const topics = allTopics.filter((topic) => 
-        topic.createdBy && adminUserIds.has(topic.createdBy)
+      // Filter topic categories to only show those created by admin/instructor users
+      const topicCategories = allTopicCategories.filter((topicCategory) => 
+        topicCategory.createdBy && adminUserIds.has(topicCategory.createdBy)
       );
       
-      // Add question count for each topic
-      const topicsWithCounts = await Promise.all(
-        topics.map(async (topic) => {
-          const questions = await storage.getQuestionsByTopic(topic.id);
-          return { ...topic, questionCount: questions.length };
+      // Add question count for each topic category
+      const topicCategoriesWithCounts = await Promise.all(
+        topicCategories.map(async (topicCategory) => {
+          const questions = await storage.getQuestionsByTopicCategory(topicCategory.id);
+          return { ...topicCategory, questionCount: questions.length };
         })
       );
 
-      res.json(topicsWithCounts);
+      res.json(topicCategoriesWithCounts);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/topics", authMiddleware, adminMiddleware, async (req, res) => {
+  app.post("/api/topic-categories", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      // Allow partial validation for topic categories (without questionIds)
-      const validated = insertTopicSchema.partial().parse(req.body);
-      const topic = await storage.createTopic({
+      const validated = insertTopicCategorySchema.parse(req.body);
+      const topicCategory = await storage.createTopicCategory({
         ...validated,
-        questionIds: validated.questionIds || [],
-        iconName: validated.iconName || null,
         createdBy: req.user!.userId,
       });
-      res.json(topic);
+      res.json(topicCategory);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   });
 
-  app.put("/api/topics/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  app.put("/api/topic-categories/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const validated = insertTopicSchema.partial().parse(req.body);
-      const topic = await storage.updateTopic(req.params.id, validated);
-      if (!topic) {
-        return res.status(404).json({ error: "Topic not found" });
+      const validated = insertTopicCategorySchema.partial().parse(req.body);
+      const topicCategory = await storage.updateTopicCategory(req.params.id, validated);
+      if (!topicCategory) {
+        return res.status(404).json({ error: "Topic category not found" });
       }
-      res.json(topic);
+      res.json(topicCategory);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   });
 
-  app.delete("/api/topics/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  app.delete("/api/topic-categories/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      await storage.deleteTopic(req.params.id);
+      await storage.deleteTopicCategory(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Tests routes
+  app.get("/api/tests", authMiddleware, async (req, res) => {
+    try {
+      const allTests = await storage.getAllTests();
+      
+      // Get all users once to avoid N+1 queries
+      const allUsers = await storage.getAllUsers();
+      const adminUserIds = new Set(
+        allUsers
+          .filter((user) => user.role === 'admin' || user.role === 'instructor')
+          .map((user) => user.id)
+      );
+      
+      // Filter tests to only show those created by admin/instructor users
+      const tests = allTests.filter((test) => 
+        test.createdBy && adminUserIds.has(test.createdBy)
+      );
+      
+      // Add question count for each test
+      const testsWithCounts = await Promise.all(
+        tests.map(async (test) => {
+          const questionCount = test.questionIds?.length || 0;
+          return { ...test, questionCount };
+        })
+      );
+
+      res.json(testsWithCounts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/tests", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const validated = insertTestSchema.parse(req.body);
+      const test = await storage.createTest({
+        ...validated,
+        createdBy: req.user!.userId,
+      });
+      res.json(test);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/tests/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const validated = insertTestSchema.partial().parse(req.body);
+      const test = await storage.updateTest(req.params.id, validated);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      res.json(test);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tests/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      await storage.deleteTest(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -169,15 +233,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const questions = await storage.getAllQuestions();
       
-      // Add topic name to each question
-      const questionsWithTopics = await Promise.all(
+      // Add topic category name to each question
+      const questionsWithTopicCategories = await Promise.all(
         questions.map(async (question) => {
-          const topic = await storage.getTopic(question.topicId);
-          return { ...question, topicName: topic?.name };
+          const topicCategory = await storage.getTopicCategory(question.topicCategoryId);
+          return { ...question, topicCategoryName: topicCategory?.name };
         })
       );
 
-      res.json(questionsWithTopics);
+      res.json(questionsWithTopicCategories);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -233,33 +297,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Interview session routes
   app.post("/api/sessions/start", authMiddleware, async (req, res) => {
     try {
-      const { topicId } = req.body;
+      const { testId } = req.body;
 
-      if (!topicId) {
-        return res.status(400).json({ error: "Topic ID required" });
+      if (!testId) {
+        return res.status(400).json({ error: "Test ID required" });
       }
 
-      // Get topic with its questionIds
-      const topic = await storage.getTopic(topicId);
-      if (!topic) {
-        return res.status(404).json({ error: "Topic not found" });
+      // Get test with its questionIds
+      const test = await storage.getTest(testId);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
       }
 
-      if (!topic.questionIds || topic.questionIds.length === 0) {
+      if (!test.questionIds || test.questionIds.length === 0) {
         return res.status(400).json({ error: "No questions available for this test" });
       }
 
-      // Create session with the questions defined in the topic
+      // Create session with the questions defined in the test
       const session = await storage.createSession({
         userId: req.user!.userId,
-        topicId,
-        questionIds: topic.questionIds,
+        testId,
+        questionIds: test.questionIds,
         currentQuestionIndex: 0,
         status: "in_progress",
       });
 
       // Get the first question for the response
-      const firstQuestion = await storage.getQuestion(topic.questionIds[0]);
+      const firstQuestion = await storage.getQuestion(test.questionIds[0]);
       res.json({ session, currentQuestion: firstQuestion });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -275,11 +339,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessionsWithDetails = await Promise.all(
         completedSessions.slice(0, 5).map(async (session) => {
-          const topic = await storage.getTopic(session.topicId);
+          const test = await storage.getTest(session.testId);
           const score = await storage.getScore(session.id);
           return {
             ...session,
-            topicName: topic?.name,
+            testName: test?.name,
             score,
           };
         })
@@ -300,11 +364,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessionsWithDetails = await Promise.all(
         completedSessions.map(async (session) => {
-          const topic = await storage.getTopic(session.topicId);
+          const test = await storage.getTest(session.testId);
           const score = await storage.getScore(session.id);
           return {
             ...session,
-            topicName: topic?.name,
+            testName: test?.name,
             score,
           };
         })
@@ -577,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/stats", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      const topics = await storage.getAllTopics();
+      const topicCategories = await storage.getAllTopicCategories();
       const questions = await storage.getAllQuestions();
 
       // Count all sessions from all users
@@ -589,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         totalUsers: users.length,
-        totalTopics: topics.length,
+        totalTopicCategories: topicCategories.length,
         totalQuestions: questions.length,
         totalSessions,
       });

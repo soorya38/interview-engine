@@ -1,15 +1,18 @@
 // Based on javascript_database blueprint with expanded interface
 import {
   users,
-  topics,
+  topicCategories,
+  tests,
   questions,
   interviewSessions,
   interviewTurns,
   scores,
   type User,
   type InsertUser,
-  type Topic,
-  type InsertTopic,
+  type TopicCategory,
+  type InsertTopicCategory,
+  type Test,
+  type InsertTest,
   type Question,
   type InsertQuestion,
   type InterviewSession,
@@ -30,16 +33,23 @@ export interface IStorage {
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
-  // Topics
-  getTopic(id: string): Promise<Topic | undefined>;
-  getAllTopics(): Promise<Topic[]>;
-  createTopic(topic: InsertTopic): Promise<Topic>;
-  updateTopic(id: string, topic: Partial<InsertTopic>): Promise<Topic | undefined>;
-  deleteTopic(id: string): Promise<void>;
+  // Topic Categories
+  getTopicCategory(id: string): Promise<TopicCategory | undefined>;
+  getAllTopicCategories(): Promise<TopicCategory[]>;
+  createTopicCategory(topicCategory: InsertTopicCategory): Promise<TopicCategory>;
+  updateTopicCategory(id: string, topicCategory: Partial<InsertTopicCategory>): Promise<TopicCategory | undefined>;
+  deleteTopicCategory(id: string): Promise<void>;
+
+  // Tests
+  getTest(id: string): Promise<Test | undefined>;
+  getAllTests(): Promise<Test[]>;
+  createTest(test: InsertTest): Promise<Test>;
+  updateTest(id: string, test: Partial<InsertTest>): Promise<Test | undefined>;
+  deleteTest(id: string): Promise<void>;
 
   // Questions
   getQuestion(id: string): Promise<Question | undefined>;
-  getQuestionsByTopic(topicId: string): Promise<Question[]>;
+  getQuestionsByTopicCategory(topicCategoryId: string): Promise<Question[]>;
   getAllQuestions(): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestion(id: string, question: Partial<InsertQuestion>): Promise<Question | undefined>;
@@ -87,28 +97,52 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  // Topics
-  async getTopic(id: string): Promise<Topic | undefined> {
-    const [topic] = await db.select().from(topics).where(eq(topics.id, id));
-    return topic || undefined;
+  // Topic Categories
+  async getTopicCategory(id: string): Promise<TopicCategory | undefined> {
+    const [topicCategory] = await db.select().from(topicCategories).where(eq(topicCategories.id, id));
+    return topicCategory || undefined;
   }
 
-  async getAllTopics(): Promise<Topic[]> {
-    return await db.select().from(topics).orderBy(desc(topics.createdAt));
+  async getAllTopicCategories(): Promise<TopicCategory[]> {
+    return await db.select().from(topicCategories).orderBy(desc(topicCategories.createdAt));
   }
 
-  async createTopic(insertTopic: InsertTopic): Promise<Topic> {
-    const [topic] = await db.insert(topics).values([insertTopic]).returning();
-    return topic;
+  async createTopicCategory(insertTopicCategory: InsertTopicCategory): Promise<TopicCategory> {
+    const [topicCategory] = await db.insert(topicCategories).values([insertTopicCategory as any]).returning();
+    return topicCategory;
   }
 
-  async updateTopic(id: string, updateData: Partial<InsertTopic>): Promise<Topic | undefined> {
-    const [topic] = await db.update(topics).set(updateData).where(eq(topics.id, id)).returning();
-    return topic || undefined;
+  async updateTopicCategory(id: string, updateData: Partial<InsertTopicCategory>): Promise<TopicCategory | undefined> {
+    const [topicCategory] = await db.update(topicCategories).set(updateData as any).where(eq(topicCategories.id, id)).returning();
+    return topicCategory || undefined;
   }
 
-  async deleteTopic(id: string): Promise<void> {
-    await db.delete(topics).where(eq(topics.id, id));
+  async deleteTopicCategory(id: string): Promise<void> {
+    await db.delete(topicCategories).where(eq(topicCategories.id, id));
+  }
+
+  // Tests
+  async getTest(id: string): Promise<Test | undefined> {
+    const [test] = await db.select().from(tests).where(eq(tests.id, id));
+    return test || undefined;
+  }
+
+  async getAllTests(): Promise<Test[]> {
+    return await db.select().from(tests).orderBy(desc(tests.createdAt));
+  }
+
+  async createTest(insertTest: InsertTest): Promise<Test> {
+    const [test] = await db.insert(tests).values([insertTest as any]).returning();
+    return test;
+  }
+
+  async updateTest(id: string, updateData: Partial<InsertTest>): Promise<Test | undefined> {
+    const [test] = await db.update(tests).set(updateData as any).where(eq(tests.id, id)).returning();
+    return test || undefined;
+  }
+
+  async deleteTest(id: string): Promise<void> {
+    await db.delete(tests).where(eq(tests.id, id));
   }
 
   // Questions
@@ -117,8 +151,8 @@ export class DatabaseStorage implements IStorage {
     return question || undefined;
   }
 
-  async getQuestionsByTopic(topicId: string): Promise<Question[]> {
-    return await db.select().from(questions).where(eq(questions.topicId, topicId)).orderBy(desc(questions.createdAt));
+  async getQuestionsByTopicCategory(topicCategoryId: string): Promise<Question[]> {
+    return await db.select().from(questions).where(eq(questions.topicCategoryId, topicCategoryId)).orderBy(desc(questions.createdAt));
   }
 
   async getAllQuestions(): Promise<Question[]> {

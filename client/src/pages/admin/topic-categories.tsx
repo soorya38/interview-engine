@@ -38,36 +38,34 @@ import { Plus, Edit, Trash2, Tag, Search, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertTopicSchema, type InsertTopic, type Topic } from "@shared/schema";
+import { insertTopicCategorySchema, type InsertTopicCategory, type TopicCategory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-// Create a separate schema for topic categories (without questionIds)
-const insertTopicCategorySchema = insertTopicSchema.omit({ questionIds: true });
 
 export default function AdminTopicCategories() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [editingTopicCategory, setEditingTopicCategory] = useState<TopicCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: topics, isLoading } = useQuery<Topic[]>({
-    queryKey: ["/api/topics"],
+  const { data: topicCategories, isLoading } = useQuery<TopicCategory[]>({
+    queryKey: ["/api/topic-categories"],
   });
 
-  // Filter topics based on search query
-  const filteredTopics = useMemo(() => {
-    if (!topics) return [];
-    if (!searchQuery.trim()) return topics;
+  // Filter topic categories based on search query
+  const filteredTopicCategories = useMemo(() => {
+    if (!topicCategories) return [];
+    if (!searchQuery.trim()) return topicCategories;
     
     const query = searchQuery.toLowerCase();
-    return topics.filter(topic => 
-      topic.name.toLowerCase().includes(query) ||
-      (topic.description && topic.description.toLowerCase().includes(query))
+    return topicCategories.filter(topicCategory => 
+      topicCategory.name.toLowerCase().includes(query) ||
+      (topicCategory.description && topicCategory.description.toLowerCase().includes(query))
     );
-  }, [topics, searchQuery]);
+  }, [topicCategories, searchQuery]);
 
-  const form = useForm<Omit<InsertTopic, 'questionIds'>>({
+  const form = useForm<InsertTopicCategory>({
     resolver: zodResolver(insertTopicCategorySchema),
     defaultValues: {
       name: "",
@@ -76,28 +74,21 @@ export default function AdminTopicCategories() {
     },
   });
 
-  const createTopicMutation = useMutation({
-    mutationFn: async (data: Omit<InsertTopic, 'questionIds'>) => {
-      const payload = {
-        name: data.name,
-        description: data.description,
-        questionIds: [], // Empty for topic categories
-        // Only include iconName if it's not empty
-        ...(data.iconName && { iconName: data.iconName }),
-      };
-      if (editingTopic) {
-        return await apiRequest("PUT", `/api/topics/${editingTopic.id}`, payload);
+  const createTopicCategoryMutation = useMutation({
+    mutationFn: async (data: InsertTopicCategory) => {
+      if (editingTopicCategory) {
+        return await apiRequest("PUT", `/api/topic-categories/${editingTopicCategory.id}`, data);
       }
-      return await apiRequest("POST", "/api/topics", payload);
+      return await apiRequest("POST", "/api/topic-categories", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/topic-categories"] });
       toast({
-        title: editingTopic ? "Topic category updated" : "Topic category created",
-        description: editingTopic ? "Topic category has been updated successfully" : "New topic category has been created",
+        title: editingTopicCategory ? "Topic category updated" : "Topic category created",
+        description: editingTopicCategory ? "Topic category has been updated successfully" : "New topic category has been created",
       });
       setDialogOpen(false);
-      setEditingTopic(null);
+      setEditingTopicCategory(null);
       form.reset();
     },
     onError: (error: any) => {
@@ -109,12 +100,12 @@ export default function AdminTopicCategories() {
     },
   });
 
-  const deleteTopicMutation = useMutation({
+  const deleteTopicCategoryMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/topics/${id}`, {});
+      return await apiRequest("DELETE", `/api/topic-categories/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/topic-categories"] });
       toast({
         title: "Topic category deleted",
         description: "Topic category has been removed successfully",
@@ -129,17 +120,17 @@ export default function AdminTopicCategories() {
     },
   });
 
-  const handleEdit = (topic: Topic) => {
-    setEditingTopic(topic);
-    form.setValue("name", topic.name);
-    form.setValue("description", topic.description || "");
-    form.setValue("iconName", topic.iconName || "");
+  const handleEdit = (topicCategory: TopicCategory) => {
+    setEditingTopicCategory(topicCategory);
+    form.setValue("name", topicCategory.name);
+    form.setValue("description", topicCategory.description || "");
+    form.setValue("iconName", topicCategory.iconName || "");
     setDialogOpen(true);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    setEditingTopic(null);
+    setEditingTopicCategory(null);
     form.reset();
   };
 
@@ -169,20 +160,20 @@ export default function AdminTopicCategories() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTopic(null)} data-testid="button-add-topic-category">
+            <Button onClick={() => setEditingTopicCategory(null)} data-testid="button-add-topic-category">
               <Plus className="h-4 w-4 mr-2" />
               Add Topic Category
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingTopic ? "Edit Topic Category" : "Add New Topic Category"}</DialogTitle>
+              <DialogTitle>{editingTopicCategory ? "Edit Topic Category" : "Add New Topic Category"}</DialogTitle>
               <DialogDescription>
-                {editingTopic ? "Update topic category information" : "Create a new topic category for organizing questions"}
+                {editingTopicCategory ? "Update topic category information" : "Create a new topic category for organizing questions"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => createTopicMutation.mutate(data))} className="space-y-4">
+              <form onSubmit={form.handleSubmit((data) => createTopicCategoryMutation.mutate(data))} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -218,8 +209,8 @@ export default function AdminTopicCategories() {
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createTopicMutation.isPending} data-testid="button-save-category">
-                    {createTopicMutation.isPending ? "Saving..." : editingTopic ? "Update" : "Create"}
+                  <Button type="submit" disabled={createTopicCategoryMutation.isPending} data-testid="button-save-category">
+                    {createTopicCategoryMutation.isPending ? "Saving..." : editingTopicCategory ? "Update" : "Create"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -251,30 +242,30 @@ export default function AdminTopicCategories() {
         </div>
         {searchQuery && (
           <div className="text-sm text-muted-foreground">
-            {filteredTopics.length} of {topics?.length || 0} categories
+            {filteredTopicCategories.length} of {topicCategories?.length || 0} categories
           </div>
         )}
       </div>
 
-      {topics && topics.length > 0 ? (
+      {topicCategories && topicCategories.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTopics.map((topic) => (
-            <Card key={topic.id} data-testid={`topic-category-card-${topic.id}`}>
+          {filteredTopicCategories.map((topicCategory) => (
+            <Card key={topicCategory.id} data-testid={`topic-category-card-${topicCategory.id}`}>
               <CardHeader>
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                   <Tag className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>{topic.name}</CardTitle>
+                <CardTitle>{topicCategory.name}</CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {topic.description || "No description"}
+                  {topicCategory.description || "No description"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleEdit(topic)}
-                  data-testid={`button-edit-category-${topic.id}`}
+                  onClick={() => handleEdit(topicCategory)}
+                  data-testid={`button-edit-category-${topicCategory.id}`}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
@@ -282,9 +273,9 @@ export default function AdminTopicCategories() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => deleteTopicMutation.mutate(topic.id)}
-                  disabled={deleteTopicMutation.isPending}
-                  data-testid={`button-delete-category-${topic.id}`}
+                  onClick={() => deleteTopicCategoryMutation.mutate(topicCategory.id)}
+                  disabled={deleteTopicCategoryMutation.isPending}
+                  data-testid={`button-delete-category-${topicCategory.id}`}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Delete
@@ -293,7 +284,7 @@ export default function AdminTopicCategories() {
             </Card>
           ))}
         </div>
-      ) : filteredTopics.length === 0 && searchQuery ? (
+      ) : filteredTopicCategories.length === 0 && searchQuery ? (
         <Card className="p-12">
           <div className="text-center text-muted-foreground">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />

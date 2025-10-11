@@ -40,43 +40,42 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertTopicSchema, type InsertTopic, type Topic, type Question } from "@shared/schema";
+import { insertTestSchema, type InsertTest, type Test, type Question } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-export default function AdminTopics() {
+export default function AdminTests() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
 
-  const { data: topics, isLoading } = useQuery<Topic[]>({
-    queryKey: ["/api/topics"],
+  const { data: tests, isLoading } = useQuery<Test[]>({
+    queryKey: ["/api/tests"],
   });
 
   const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
   });
 
-  // Filter topics based on search query
-  const filteredTopics = useMemo(() => {
-    if (!topics) return [];
-    if (!searchQuery.trim()) return topics;
+  // Filter tests based on search query
+  const filteredTests = useMemo(() => {
+    if (!tests) return [];
+    if (!searchQuery.trim()) return tests;
     
     const query = searchQuery.toLowerCase();
-    return topics.filter(topic => 
+    return tests.filter(topic => 
       topic.name.toLowerCase().includes(query) ||
       (topic.description && topic.description.toLowerCase().includes(query))
     );
-  }, [topics, searchQuery]);
+  }, [tests, searchQuery]);
 
-  const form = useForm<InsertTopic>({
-    resolver: zodResolver(insertTopicSchema),
+  const form = useForm<InsertTest>({
+    resolver: zodResolver(insertTestSchema),
     defaultValues: {
       name: "",
       description: "",
-      iconName: "BookOpen",
     },
   });
 
@@ -86,25 +85,25 @@ export default function AdminTopics() {
     return questions;
   }, [questions]);
 
-  const createTopicMutation = useMutation({
-    mutationFn: async (data: InsertTopic) => {
+  const createTestMutation = useMutation({
+    mutationFn: async (data: InsertTest) => {
       const payload = {
         ...data,
-        questionIds: selectedQuestions,
+        questionIds: selectedQuestions.length > 0 ? selectedQuestions : [],
       };
-      if (editingTopic) {
-        return await apiRequest("PUT", `/api/topics/${editingTopic.id}`, payload);
+      if (editingTest) {
+        return await apiRequest("PUT", `/api/tests/${editingTest.id}`, payload);
       }
-      return await apiRequest("POST", "/api/topics", payload);
+      return await apiRequest("POST", "/api/tests", payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tests"] });
       toast({
-        title: editingTopic ? "Test updated" : "Test created",
-        description: editingTopic ? "Test has been updated successfully" : "New test has been created",
+        title: editingTest ? "Test updated" : "Test created",
+        description: editingTest ? "Test has been updated successfully" : "New test has been created",
       });
       setDialogOpen(false);
-      setEditingTopic(null);
+      setEditingTest(null);
       setSelectedQuestions([]);
       form.reset();
     },
@@ -117,12 +116,12 @@ export default function AdminTopics() {
     },
   });
 
-  const deleteTopicMutation = useMutation({
+  const deleteTestMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/topics/${id}`, {});
+      return await apiRequest("DELETE", `/api/tests/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tests"] });
       toast({
         title: "Test deleted",
         description: "Test has been removed successfully",
@@ -137,11 +136,10 @@ export default function AdminTopics() {
     },
   });
 
-  const handleEdit = (topic: Topic) => {
-    setEditingTopic(topic);
+  const handleEdit = (topic: Test) => {
+    setEditingTest(topic);
     form.setValue("name", topic.name);
     form.setValue("description", topic.description || "");
-    form.setValue("iconName", topic.iconName || "BookOpen");
     // Load existing question IDs for this topic
     setSelectedQuestions(topic.questionIds || []);
     setDialogOpen(true);
@@ -149,7 +147,7 @@ export default function AdminTopics() {
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    setEditingTopic(null);
+    setEditingTest(null);
     setSelectedQuestions([]);
     form.reset();
   };
@@ -188,20 +186,20 @@ export default function AdminTopics() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTopic(null)} data-testid="button-add-topic">
+            <Button onClick={() => setEditingTest(null)} data-testid="button-add-topic">
               <Plus className="h-4 w-4 mr-2" />
               Add Test
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingTopic ? "Edit Test" : "Add New Test"}</DialogTitle>
+              <DialogTitle>{editingTest ? "Edit Test" : "Add New Test"}</DialogTitle>
               <DialogDescription>
-                {editingTopic ? "Update test information" : "Create a new interview test"}
+                {editingTest ? "Update test information" : "Create a new interview test"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => createTopicMutation.mutate(data))} className="space-y-4">
+              <form onSubmit={form.handleSubmit((data) => createTestMutation.mutate(data))} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -287,10 +285,10 @@ export default function AdminTopics() {
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={createTopicMutation.isPending || selectedQuestions.length === 0} 
+                    disabled={createTestMutation.isPending} 
                     data-testid="button-save-topic"
                   >
-                    {createTopicMutation.isPending ? "Saving..." : editingTopic ? "Update" : "Create"}
+                    {createTestMutation.isPending ? "Saving..." : editingTest ? "Update" : "Create"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -322,14 +320,14 @@ export default function AdminTopics() {
         </div>
         {searchQuery && (
           <div className="text-sm text-muted-foreground">
-            {filteredTopics.length} of {topics?.length || 0} tests
+            {filteredTests.length} of {tests?.length || 0} tests
           </div>
         )}
       </div>
 
-      {topics && topics.length > 0 ? (
+      {tests && tests.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTopics.map((topic) => (
+          {filteredTests.map((topic) => (
             <Card key={topic.id} data-testid={`topic-card-${topic.id}`}>
               <CardHeader>
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
@@ -353,8 +351,8 @@ export default function AdminTopics() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => deleteTopicMutation.mutate(topic.id)}
-                  disabled={deleteTopicMutation.isPending}
+                  onClick={() => deleteTestMutation.mutate(topic.id)}
+                  disabled={deleteTestMutation.isPending}
                   data-testid={`button-delete-${topic.id}`}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
@@ -364,7 +362,7 @@ export default function AdminTopics() {
             </Card>
           ))}
         </div>
-      ) : filteredTopics.length === 0 && searchQuery ? (
+      ) : filteredTests.length === 0 && searchQuery ? (
         <Card className="p-12">
           <div className="text-center text-muted-foreground">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />

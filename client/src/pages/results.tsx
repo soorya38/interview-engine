@@ -63,7 +63,7 @@ export default function Results() {
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       <div className="text-center space-y-3">
-        <div className={`text-7xl font-bold ${getGradeColor(score.grade)}`} data-testid="text-grade">
+        <div className={`text-7xl font-bold ${getGradeColor(score.grade || 'F')}`} data-testid="text-grade">
           {score.grade}
         </div>
         <h1 className="text-3xl font-semibold">Interview Complete!</h1>

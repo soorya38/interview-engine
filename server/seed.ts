@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, topics, questions, interviewSessions, interviewTurns, scores } from "@shared/schema";
+import { users, topicCategories, questions, tests, interviewSessions, interviewTurns, scores } from "@shared/schema";
 import { hashPassword } from "./auth";
 import { eq, sql } from "drizzle-orm";
 
@@ -13,7 +13,8 @@ async function seed() {
     await db.delete(interviewTurns);
     await db.delete(interviewSessions);
     await db.delete(questions);
-    await db.delete(topics);
+    await db.delete(tests);
+    await db.delete(topicCategories);
     await db.delete(users);
     console.log("✅ Existing data cleared");
 
@@ -47,9 +48,9 @@ async function seed() {
 
     console.log("✅ Created sample user:", sampleUser.username);
 
-    // Create topics
-    const [jsTopic] = await db
-      .insert(topics)
+    // Create topic categories
+    const [jsTopicCategory] = await db
+      .insert(topicCategories)
       .values({
         name: "JavaScript Fundamentals",
         description: "Core JavaScript concepts and best practices",
@@ -58,8 +59,8 @@ async function seed() {
       })
       .returning();
 
-    const [reactTopic] = await db
-      .insert(topics)
+    const [reactTopicCategory] = await db
+      .insert(topicCategories)
       .values({
         name: "React Development",
         description: "React components, hooks, and state management",
@@ -68,8 +69,8 @@ async function seed() {
       })
       .returning();
 
-    const [systemDesignTopic] = await db
-      .insert(topics)
+    const [systemDesignTopicCategory] = await db
+      .insert(topicCategories)
       .values({
         name: "System Design",
         description: "Scalability, architecture, and design patterns",
@@ -78,26 +79,26 @@ async function seed() {
       })
       .returning();
 
-    console.log("✅ Created topics");
+    console.log("✅ Created topic categories");
 
     // Create questions for JavaScript Fundamentals
     await db.insert(questions).values([
       {
-        topicId: jsTopic.id,
+        topicCategoryId: jsTopicCategory.id,
         questionText: "Explain the difference between let, const, and var in JavaScript.",
         difficulty: "easy",
         expectedKeyPoints: ["block scope", "hoisting", "reassignment"],
         createdBy: admin.id,
       },
       {
-        topicId: jsTopic.id,
+        topicCategoryId: jsTopicCategory.id,
         questionText: "What is a closure in JavaScript and when would you use one?",
         difficulty: "medium",
         expectedKeyPoints: ["lexical scope", "function", "private variables"],
         createdBy: admin.id,
       },
       {
-        topicId: jsTopic.id,
+        topicCategoryId: jsTopicCategory.id,
         questionText: "Explain the event loop in JavaScript.",
         difficulty: "hard",
         expectedKeyPoints: ["call stack", "callback queue", "asynchronous"],
@@ -108,21 +109,21 @@ async function seed() {
     // Create questions for React
     await db.insert(questions).values([
       {
-        topicId: reactTopic.id,
+        topicCategoryId: reactTopicCategory.id,
         questionText: "What are React hooks and why are they useful?",
         difficulty: "easy",
         expectedKeyPoints: ["useState", "useEffect", "functional components"],
         createdBy: admin.id,
       },
       {
-        topicId: reactTopic.id,
+        topicCategoryId: reactTopicCategory.id,
         questionText: "Explain the virtual DOM and how React uses it for performance.",
         difficulty: "medium",
         expectedKeyPoints: ["diffing algorithm", "reconciliation", "performance"],
         createdBy: admin.id,
       },
       {
-        topicId: reactTopic.id,
+        topicCategoryId: reactTopicCategory.id,
         questionText: "How would you optimize a React application that has performance issues?",
         difficulty: "hard",
         expectedKeyPoints: ["memoization", "lazy loading", "code splitting"],
@@ -133,14 +134,14 @@ async function seed() {
     // Create questions for System Design
     await db.insert(questions).values([
       {
-        topicId: systemDesignTopic.id,
+        topicCategoryId: systemDesignTopicCategory.id,
         questionText: "How would you design a URL shortening service like bit.ly?",
         difficulty: "medium",
         expectedKeyPoints: ["database", "hash function", "scalability"],
         createdBy: admin.id,
       },
       {
-        topicId: systemDesignTopic.id,
+        topicCategoryId: systemDesignTopicCategory.id,
         questionText: "Explain how you would design a rate limiting system.",
         difficulty: "hard",
         expectedKeyPoints: ["algorithms", "distributed systems", "caching"],
@@ -150,9 +151,32 @@ async function seed() {
 
     console.log("✅ Created sample questions");
 
-    // Get all questions for creating sessions
-    const jsQuestions = await db.select().from(questions).where(eq(questions.topicId, jsTopic.id));
-    const reactQuestions = await db.select().from(questions).where(eq(questions.topicId, reactTopic.id));
+    // Get all questions for creating tests
+    const jsQuestions = await db.select().from(questions).where(eq(questions.topicCategoryId, jsTopicCategory.id));
+    const reactQuestions = await db.select().from(questions).where(eq(questions.topicCategoryId, reactTopicCategory.id));
+
+    // Create tests
+    const [jsTest] = await db.insert(tests).values({
+      name: "JavaScript Fundamentals Test",
+      description: "Test your JavaScript knowledge with fundamental concepts",
+      questionIds: jsQuestions.map(q => q.id),
+      duration: 30,
+      difficulty: "mixed",
+      isActive: true,
+      createdBy: admin.id,
+    }).returning();
+
+    const [reactTest] = await db.insert(tests).values({
+      name: "React Development Test", 
+      description: "Comprehensive React knowledge assessment",
+      questionIds: reactQuestions.map(q => q.id),
+      duration: 45,
+      difficulty: "mixed",
+      isActive: true,
+      createdBy: admin.id,
+    }).returning();
+
+    console.log("✅ Created sample tests");
 
     // Create completed interview sessions for testuser
     const now = new Date();
@@ -163,7 +187,7 @@ async function seed() {
     // Session 1 - JavaScript (completed yesterday)
     const [session1] = await db.insert(interviewSessions).values({
       userId: sampleUser.id,
-      topicId: jsTopic.id,
+      testId: jsTest.id,
       status: "completed",
       currentQuestionIndex: 3,
       questionIds: jsQuestions.slice(0, 3).map(q => q.id),
@@ -244,7 +268,7 @@ async function seed() {
     // Session 2 - React (completed 2 days ago)
     const [session2] = await db.insert(interviewSessions).values({
       userId: sampleUser.id,
-      topicId: reactTopic.id,
+      testId: reactTest.id,
       status: "completed",
       currentQuestionIndex: 2,
       questionIds: reactQuestions.slice(0, 2).map(q => q.id),
@@ -308,7 +332,7 @@ async function seed() {
     // Session 3 - JavaScript (excellent score, 3 days ago)
     const [session3] = await db.insert(interviewSessions).values({
       userId: sampleUser.id,
-      topicId: jsTopic.id,
+      testId: jsTest.id,
       status: "completed",
       currentQuestionIndex: 2,
       questionIds: jsQuestions.slice(0, 2).map(q => q.id),

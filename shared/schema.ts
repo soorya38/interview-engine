@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, uuid, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, uuid, jsonb, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -21,13 +21,25 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Topics for interview categories
-export const topics = pgTable("topics", {
+// Topic Categories for organizing questions by subject area
+export const topicCategories = pgTable("topic_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   iconName: varchar("icon_name", { length: 100 }), // for UI display
-  questionIds: jsonb("question_ids").$type<string[]>().default([]), // array of question UUIDs
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tests table
+export const tests = pgTable("tests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  questionIds: jsonb("question_ids").$type<string[]>().default([]).notNull(), // array of question UUIDs
+  duration: integer("duration"), // duration in minutes
+  difficulty: varchar("difficulty", { length: 50 }), // easy, medium, hard
+  isActive: boolean("is_active").default(true).notNull(),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -35,7 +47,7 @@ export const topics = pgTable("topics", {
 // Questions bank
 export const questions = pgTable("questions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  topicId: uuid("topic_id").references(() => topics.id).notNull(),
+  topicCategoryId: uuid("topic_category_id").references(() => topicCategories.id).notNull(),
   questionText: text("question_text").notNull(),
   difficulty: varchar("difficulty", { length: 50 }).notNull(), // easy, medium, hard
   expectedKeyPoints: jsonb("expected_key_points").$type<string[]>(),
@@ -47,7 +59,7 @@ export const questions = pgTable("questions", {
 export const interviewSessions = pgTable("interview_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id).notNull(),
-  topicId: uuid("topic_id").references(() => topics.id).notNull(),
+  testId: uuid("test_id").references(() => tests.id).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("in_progress"), // in_progress, completed, abandoned
   currentQuestionIndex: integer("current_question_index").default(0).notNull(),
   questionIds: jsonb("question_ids").$type<string[]>().notNull(), // array of question UUIDs
@@ -99,23 +111,31 @@ export const scores = pgTable("scores", {
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(interviewSessions),
   scores: many(scores),
-  createdTopics: many(topics),
+  createdTopicCategories: many(topicCategories),
   createdQuestions: many(questions),
+  createdTests: many(tests),
 }));
 
-export const topicsRelations = relations(topics, ({ one, many }) => ({
+export const topicCategoriesRelations = relations(topicCategories, ({ one, many }) => ({
   creator: one(users, {
-    fields: [topics.createdBy],
+    fields: [topicCategories.createdBy],
     references: [users.id],
   }),
   questions: many(questions),
+}));
+
+export const testsRelations = relations(tests, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [tests.createdBy],
+    references: [users.id],
+  }),
   sessions: many(interviewSessions),
 }));
 
 export const questionsRelations = relations(questions, ({ one, many }) => ({
-  topic: one(topics, {
-    fields: [questions.topicId],
-    references: [topics.id],
+  topicCategory: one(topicCategories, {
+    fields: [questions.topicCategoryId],
+    references: [topicCategories.id],
   }),
   creator: one(users, {
     fields: [questions.createdBy],
@@ -129,9 +149,9 @@ export const interviewSessionsRelations = relations(interviewSessions, ({ one, m
     fields: [interviewSessions.userId],
     references: [users.id],
   }),
-  topic: one(topics, {
-    fields: [interviewSessions.topicId],
-    references: [topics.id],
+  test: one(tests, {
+    fields: [interviewSessions.testId],
+    references: [tests.id],
   }),
   turns: many(interviewTurns),
   score: one(scores),
@@ -168,9 +188,16 @@ export const insertUserSchema = createInsertSchema(users).omit({
   username: z.string().min(3, "Username must be at least 3 characters"),
 });
 
-export const insertTopicSchema = createInsertSchema(topics).omit({
+export const insertTopicCategorySchema = createInsertSchema(topicCategories).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertTestSchema = createInsertSchema(tests).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  questionIds: z.array(z.string()).optional(),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
@@ -197,8 +224,11 @@ export const insertScoreSchema = createInsertSchema(scores).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-export type InsertTopic = z.infer<typeof insertTopicSchema>;
-export type Topic = typeof topics.$inferSelect;
+export type InsertTopicCategory = z.infer<typeof insertTopicCategorySchema>;
+export type TopicCategory = typeof topicCategories.$inferSelect;
+
+export type InsertTest = z.infer<typeof insertTestSchema>;
+export type Test = typeof tests.$inferSelect;
 
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type Question = typeof questions.$inferSelect;

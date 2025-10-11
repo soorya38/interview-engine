@@ -39,7 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuestionSchema, type InsertQuestion, type Question, type Topic } from "@shared/schema";
+import { insertQuestionSchema, type InsertQuestion, type Question, type TopicCategory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,11 +51,11 @@ export default function AdminQuestions() {
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
 
-  const { data: topics } = useQuery<Topic[]>({
-    queryKey: ["/api/topics"],
+  const { data: topicCategories } = useQuery<TopicCategory[]>({
+    queryKey: ["/api/topic-categories"],
   });
 
-  const { data: questions, isLoading } = useQuery<(Question & { topicName?: string })[]>({
+  const { data: questions, isLoading } = useQuery<(Question & { topicCategoryName?: string })[]>({
     queryKey: ["/api/questions"],
   });
 
@@ -70,13 +70,13 @@ export default function AdminQuestions() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(question => 
         question.questionText.toLowerCase().includes(query) ||
-        (question.topicName && question.topicName.toLowerCase().includes(query))
+        (question.topicCategoryName && question.topicCategoryName.toLowerCase().includes(query))
       );
     }
     
-    // Filter by topic
+    // Filter by topic category
     if (selectedTopic !== "all") {
-      filtered = filtered.filter(question => question.topicId === selectedTopic);
+      filtered = filtered.filter(question => question.topicCategoryId === selectedTopic);
     }
     
     // Filter by difficulty
@@ -90,7 +90,7 @@ export default function AdminQuestions() {
   const form = useForm<InsertQuestion>({
     resolver: zodResolver(insertQuestionSchema),
     defaultValues: {
-      topicId: "",
+      topicCategoryId: "",
       questionText: "",
       difficulty: "medium",
     },
@@ -144,7 +144,7 @@ export default function AdminQuestions() {
 
   const handleEdit = (question: Question) => {
     setEditingQuestion(question);
-    form.setValue("topicId", question.topicId);
+    form.setValue("topicCategoryId", question.topicCategoryId);
     form.setValue("questionText", question.questionText);
     form.setValue("difficulty", question.difficulty);
     setDialogOpen(true);
@@ -211,20 +211,20 @@ export default function AdminQuestions() {
               <form onSubmit={form.handleSubmit((data) => createQuestionMutation.mutate(data))} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="topicId"
+                  name="topicCategoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Topic</FormLabel>
+                      <FormLabel>Topic Category</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-topic">
-                            <SelectValue placeholder="Select a topic" />
+                          <SelectTrigger data-testid="select-topic-category">
+                            <SelectValue placeholder="Select a topic category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {topics?.map((topic) => (
-                            <SelectItem key={topic.id} value={topic.id}>
-                              {topic.name}
+                          {topicCategories?.map((topicCategory) => (
+                            <SelectItem key={topicCategory.id} value={topicCategory.id}>
+                              {topicCategory.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -312,13 +312,13 @@ export default function AdminQuestions() {
           
           <Select value={selectedTopic} onValueChange={setSelectedTopic}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by topic" />
+              <SelectValue placeholder="Filter by topic category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Topics</SelectItem>
-              {topics?.map((topic) => (
-                <SelectItem key={topic.id} value={topic.id}>
-                  {topic.name}
+              <SelectItem value="all">All Topic Categories</SelectItem>
+              {topicCategories?.map((topicCategory) => (
+                <SelectItem key={topicCategory.id} value={topicCategory.id}>
+                  {topicCategory.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -365,7 +365,7 @@ export default function AdminQuestions() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{question.topicName}</Badge>
+                      <Badge variant="outline">{question.topicCategoryName}</Badge>
                       <Badge className={getDifficultyColor(question.difficulty)}>
                         {question.difficulty}
                       </Badge>
@@ -412,8 +412,8 @@ export default function AdminQuestions() {
             <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg mb-2">No questions yet</p>
             <p className="text-sm">
-              {!topics || topics.length === 0
-                ? "Create topics first, then add questions"
+              {!topicCategories || topicCategories.length === 0
+                ? "Create topic categories first, then add questions"
                 : "Click 'Add Question' to create your first question"}
             </p>
           </div>
