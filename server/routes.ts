@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, verifyPassword, generateToken, verifyToken, type JWTPayload } from "./auth";
 import { conductInterview, calculateTotalScore, getGrade } from "./gemini";
-import { loginSchema, insertUserSchema, insertTopicSchema, insertQuestionSchema } from "@shared/schema";
+import { loginSchema, insertUserSchema, insertTopicSchema, insertQuestionSchema, updateProfileSchema } from "@shared/schema";
 
 // Extend Express Request to include user
 declare global {
@@ -564,6 +564,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Profile routes
+  app.get("/api/profile", authMiddleware, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/profile", authMiddleware, async (req, res) => {
+    try {
+      const validated = updateProfileSchema.parse(req.body);
+      
+      const user = await storage.updateUser(req.user!.userId, validated);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   });
 

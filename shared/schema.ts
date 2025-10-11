@@ -218,3 +218,17 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// Update profile schema (for users to update their own profile)
+export const updateProfileSchema = z.object({
+  fullName: z.string().optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  profileData: z.object({
+    bio: z.string().optional(),
+    skills: z.array(z.string()).optional(),
+    experience: z.string().optional(),
+    education: z.string().optional(),
+  }).optional(),
+});
+
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
