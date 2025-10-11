@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileQuestion, Trash2, Edit } from "lucide-react";
+import { Plus, FileQuestion, Trash2, Edit, Search, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
@@ -47,6 +47,9 @@ export default function AdminQuestions() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
 
   const { data: topics } = useQuery<Topic[]>({
     queryKey: ["/api/topics"],
@@ -55,6 +58,34 @@ export default function AdminQuestions() {
   const { data: questions, isLoading } = useQuery<(Question & { topicName?: string })[]>({
     queryKey: ["/api/questions"],
   });
+
+  // Filter questions based on search query, topic, and difficulty
+  const filteredQuestions = useMemo(() => {
+    if (!questions) return [];
+    
+    let filtered = questions;
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(question => 
+        question.questionText.toLowerCase().includes(query) ||
+        (question.topicName && question.topicName.toLowerCase().includes(query))
+      );
+    }
+    
+    // Filter by topic
+    if (selectedTopic !== "all") {
+      filtered = filtered.filter(question => question.topicId === selectedTopic);
+    }
+    
+    // Filter by difficulty
+    if (selectedDifficulty !== "all") {
+      filtered = filtered.filter(question => question.difficulty === selectedDifficulty);
+    }
+    
+    return filtered;
+  }, [questions, searchQuery, selectedTopic, selectedDifficulty]);
 
   const form = useForm<InsertQuestion>({
     resolver: zodResolver(insertQuestionSchema),
@@ -256,9 +287,79 @@ export default function AdminQuestions() {
         </Dialog>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[300px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search questions by text or topic..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          
+          <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by topic" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Topics</SelectItem>
+              {topics?.map((topic) => (
+                <SelectItem key={topic.id} value={topic.id}>
+                  {topic.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Filter by difficulty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {(searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") && (
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>
+              {filteredQuestions.length} of {questions?.length || 0} questions
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedTopic("all");
+                setSelectedDifficulty("all");
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+        )}
+      </div>
+
       {questions && questions.length > 0 ? (
         <div className="space-y-3">
-          {questions.map((question) => (
+          {filteredQuestions.map((question) => (
             <Card key={question.id} data-testid={`question-card-${question.id}`}>
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
@@ -297,6 +398,14 @@ export default function AdminQuestions() {
             </Card>
           ))}
         </div>
+      ) : filteredQuestions.length === 0 && (searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") ? (
+        <Card className="p-12">
+          <div className="text-center text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg mb-2">No questions found</p>
+            <p className="text-sm">Try adjusting your search terms or filters</p>
+          </div>
+        </Card>
       ) : (
         <Card className="p-12">
           <div className="text-center text-muted-foreground">

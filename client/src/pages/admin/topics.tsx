@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +27,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, Search, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,10 +39,23 @@ export default function AdminTopics() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: topics, isLoading } = useQuery<Topic[]>({
     queryKey: ["/api/topics"],
   });
+
+  // Filter topics based on search query
+  const filteredTopics = useMemo(() => {
+    if (!topics) return [];
+    if (!searchQuery.trim()) return topics;
+    
+    const query = searchQuery.toLowerCase();
+    return topics.filter(topic => 
+      topic.name.toLowerCase().includes(query) ||
+      (topic.description && topic.description.toLowerCase().includes(query))
+    );
+  }, [topics, searchQuery]);
 
   const form = useForm<InsertTopic>({
     resolver: zodResolver(insertTopicSchema),
@@ -198,9 +211,37 @@ export default function AdminTopics() {
         </Dialog>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search topics by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {searchQuery && (
+          <div className="text-sm text-muted-foreground">
+            {filteredTopics.length} of {topics?.length || 0} topics
+          </div>
+        )}
+      </div>
+
       {topics && topics.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {topics.map((topic) => (
+          {filteredTopics.map((topic) => (
             <Card key={topic.id} data-testid={`topic-card-${topic.id}`}>
               <CardHeader>
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
@@ -235,6 +276,14 @@ export default function AdminTopics() {
             </Card>
           ))}
         </div>
+      ) : filteredTopics.length === 0 && searchQuery ? (
+        <Card className="p-12">
+          <div className="text-center text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg mb-2">No topics found</p>
+            <p className="text-sm">Try adjusting your search terms</p>
+          </div>
+        </Card>
       ) : (
         <Card className="p-12">
           <div className="text-center text-muted-foreground">
