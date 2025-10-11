@@ -73,7 +73,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values([insertUser]).returning();
+    const [user] = await db.insert(users).values([insertUser as any]).returning();
     return user;
   }
 
@@ -120,12 +120,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
-    const [question] = await db.insert(questions).values([insertQuestion]).returning();
+    const [question] = await db.insert(questions).values([insertQuestion as any]).returning();
     return question;
   }
 
   async updateQuestion(id: string, updateData: Partial<InsertQuestion>): Promise<Question | undefined> {
-    const [question] = await db.update(questions).set(updateData).where(eq(questions.id, id)).returning();
+    const [question] = await db.update(questions).set(updateData as any).where(eq(questions.id, id)).returning();
     return question || undefined;
   }
 
@@ -144,12 +144,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSession(insertSession: InsertInterviewSession): Promise<InterviewSession> {
-    const [session] = await db.insert(interviewSessions).values([insertSession]).returning();
+    const [session] = await db.insert(interviewSessions).values([insertSession as any]).returning();
     return session;
   }
 
   async updateSession(id: string, updateData: Partial<InsertInterviewSession>): Promise<InterviewSession | undefined> {
-    const [session] = await db.update(interviewSessions).set(updateData).where(eq(interviewSessions.id, id)).returning();
+    const [session] = await db.update(interviewSessions).set(updateData as any).where(eq(interviewSessions.id, id)).returning();
     return session || undefined;
   }
 
@@ -159,7 +159,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTurn(insertTurn: InsertInterviewTurn): Promise<InterviewTurn> {
-    const [turn] = await db.insert(interviewTurns).values([insertTurn]).returning();
+    const [turn] = await db.insert(interviewTurns).values([insertTurn as any]).returning();
     return turn;
   }
 
@@ -174,7 +174,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createScore(insertScore: InsertScore): Promise<Score> {
-    const [score] = await db.insert(scores).values([insertScore]).returning();
+    const [score] = await db.insert(scores).values([insertScore as any]).returning();
     return score;
   }
 }
