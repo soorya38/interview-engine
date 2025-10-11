@@ -27,6 +27,7 @@ export const topics = pgTable("topics", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   iconName: varchar("icon_name", { length: 100 }), // for UI display
+  questionIds: jsonb("question_ids").$type<string[]>().default([]), // array of question UUIDs
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

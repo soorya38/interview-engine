@@ -48,7 +48,7 @@ export function AppSidebar() {
       icon: Home,
     },
     {
-      title: "Topics",
+      title: "Tests",
       url: "/admin/topics",
       icon: BookOpen,
     },

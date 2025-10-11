@@ -131,6 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertTopicSchema.parse(req.body);
       const topic = await storage.createTopic({
         ...validated,
+        questionIds: validated.questionIds || [],
         createdBy: req.user!.userId,
       });
       res.json(topic);
@@ -236,26 +237,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Topic ID required" });
       }
 
-      // Get questions for topic
-      const questions = await storage.getQuestionsByTopic(topicId);
-      if (questions.length === 0) {
-        return res.status(400).json({ error: "No questions available for this topic" });
+      // Get topic with its questionIds
+      const topic = await storage.getTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({ error: "Topic not found" });
       }
 
-      // Create session with random questions (up to 5)
-      const selectedQuestions = questions
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.min(5, questions.length));
+      if (!topic.questionIds || topic.questionIds.length === 0) {
+        return res.status(400).json({ error: "No questions available for this test" });
+      }
 
+      // Create session with the questions defined in the topic
       const session = await storage.createSession({
         userId: req.user!.userId,
         topicId,
-        questionIds: selectedQuestions.map((q) => q.id),
+        questionIds: topic.questionIds,
         currentQuestionIndex: 0,
         status: "in_progress",
       });
 
-      res.json({ session, currentQuestion: selectedQuestions[0] });
+      // Get the first question for the response
+      const firstQuestion = await storage.getQuestion(topic.questionIds[0]);
+      res.json({ session, currentQuestion: firstQuestion });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
