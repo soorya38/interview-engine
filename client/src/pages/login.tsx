@@ -39,22 +39,34 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginInput) => {
+    if (isLoading) return; // Prevent double submission
+    
     setIsLoading(true);
     try {
       const response = await apiRequest("POST", "/api/auth/login", data);
+      
+      // Validate response before proceeding
+      if (!response.user || !response.token) {
+        throw new Error("Invalid response from server");
+      }
+      
       login(response.user, response.token);
       
-      if (response.user.role === "admin" || response.user.role === "instructor") {
-        setLocation("/admin");
-      } else {
-        setLocation("/dashboard");
-      }
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        if (response.user.role === "admin" || response.user.role === "instructor") {
+          setLocation("/admin");
+        } else {
+          setLocation("/dashboard");
+        }
+      }, 100);
       
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Login failed",

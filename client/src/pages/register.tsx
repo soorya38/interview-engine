@@ -40,17 +40,30 @@ export default function Register() {
   });
 
   const onSubmit = async (data: InsertUser) => {
+    if (isLoading) return; // Prevent double submission
+    
     setIsLoading(true);
     try {
       const response = await apiRequest("POST", "/api/auth/register", data);
+      
+      // Validate response before proceeding
+      if (!response.user || !response.token) {
+        throw new Error("Invalid response from server");
+      }
+      
       login(response.user, response.token);
-      setLocation("/dashboard");
+      
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 100);
       
       toast({
         title: "Account created!",
         description: "Welcome to AI MockMate. Let's start practicing!",
       });
     } catch (error: any) {
+      console.error("Registration error:", error);
       toast({
         variant: "destructive",
         title: "Registration failed",
