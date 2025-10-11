@@ -3,6 +3,16 @@
 echo "🚀 Starting AI MockMate Platform (Production Mode)"
 echo ""
 
+# Load environment variables from .env file
+if [ -f .env ]; then
+  echo "📄 Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+  echo "✅ Environment variables loaded from .env file"
+else
+  echo "⚠️  No .env file found, using system environment variables"
+fi
+echo ""
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -78,7 +88,7 @@ echo ""
 
 # Seed the database
 echo "📦 Seeding database with default values..."
-tsx server/seed.ts
+npx tsx server/seed.ts
 
 if [ $? -ne 0 ]; then
   echo -e "${RED}❌ Database seeding failed${NC}"

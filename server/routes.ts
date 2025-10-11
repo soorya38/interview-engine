@@ -261,6 +261,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/sessions/recent", authMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getUserSessions(req.user!.userId);
+      
+      // Filter only completed sessions and limit to 5 for dashboard
+      const completedSessions = sessions.filter(s => s.status === "completed");
+      
+      const sessionsWithDetails = await Promise.all(
+        completedSessions.slice(0, 5).map(async (session) => {
+          const topic = await storage.getTopic(session.topicId);
+          const score = await storage.getScore(session.id);
+          return {
+            ...session,
+            topicName: topic?.name,
+            score,
+          };
+        })
+      );
+
+      res.json(sessionsWithDetails);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sessions/history", authMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getUserSessions(req.user!.userId);
+      
+      // Get all completed sessions for history page
+      const completedSessions = sessions.filter(s => s.status === "completed");
+      
+      const sessionsWithDetails = await Promise.all(
+        completedSessions.map(async (session) => {
+          const topic = await storage.getTopic(session.topicId);
+          const score = await storage.getScore(session.id);
+          return {
+            ...session,
+            topicName: topic?.name,
+            score,
+          };
+        })
+      );
+
+      res.json(sessionsWithDetails);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
     try {
       const session = await storage.getSession(req.params.id);
@@ -420,56 +470,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const nextQuestion = await storage.getQuestion(session.questionIds[nextQuestionIndex]);
         res.json({ turn, completed: false, nextQuestion });
       }
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/sessions/recent", authMiddleware, async (req, res) => {
-    try {
-      const sessions = await storage.getUserSessions(req.user!.userId);
-      
-      // Filter only completed sessions and limit to 5 for dashboard
-      const completedSessions = sessions.filter(s => s.status === "completed");
-      
-      const sessionsWithDetails = await Promise.all(
-        completedSessions.slice(0, 5).map(async (session) => {
-          const topic = await storage.getTopic(session.topicId);
-          const score = await storage.getScore(session.id);
-          return {
-            ...session,
-            topicName: topic?.name,
-            score,
-          };
-        })
-      );
-
-      res.json(sessionsWithDetails);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/sessions/history", authMiddleware, async (req, res) => {
-    try {
-      const sessions = await storage.getUserSessions(req.user!.userId);
-      
-      // Get all completed sessions for history page
-      const completedSessions = sessions.filter(s => s.status === "completed");
-      
-      const sessionsWithDetails = await Promise.all(
-        completedSessions.map(async (session) => {
-          const topic = await storage.getTopic(session.topicId);
-          const score = await storage.getScore(session.id);
-          return {
-            ...session,
-            topicName: topic?.name,
-            score,
-          };
-        })
-      );
-
-      res.json(sessionsWithDetails);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
