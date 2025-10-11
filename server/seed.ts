@@ -1,6 +1,7 @@
 import { db } from "./db";
-import { users, topics, questions } from "@shared/schema";
+import { users, topics, questions, interviewSessions, interviewTurns, scores } from "@shared/schema";
 import { hashPassword } from "./auth";
+import { eq } from "drizzle-orm";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -139,12 +140,238 @@ async function seed() {
 
     console.log("✅ Created sample questions");
 
+    // Get all questions for creating sessions
+    const jsQuestions = await db.select().from(questions).where(eq(questions.topicId, jsTopic.id));
+    const reactQuestions = await db.select().from(questions).where(eq(questions.topicId, reactTopic.id));
+
+    // Create completed interview sessions for testuser
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+    // Session 1 - JavaScript (completed yesterday)
+    const [session1] = await db.insert(interviewSessions).values({
+      userId: sampleUser.id,
+      topicId: jsTopic.id,
+      status: "completed",
+      currentQuestionIndex: 3,
+      questionIds: jsQuestions.slice(0, 3).map(q => q.id),
+      startedAt: oneDayAgo,
+      completedAt: new Date(oneDayAgo.getTime() + 30 * 60 * 1000)
+    } as any).returning();
+
+    await db.insert(interviewTurns).values([
+      {
+        sessionId: session1.id,
+        questionId: jsQuestions[0].id,
+        turnNumber: 0,
+        userAnswer: "let and const are block-scoped while var is function-scoped. const cannot be reassigned.",
+        aiResponse: "Good explanation! Can you elaborate on hoisting?",
+        evaluation: {
+          grammar: 90,
+          technical: 85,
+          depth: 75,
+          communication: 88,
+          feedback: "Clear explanation of scoping differences",
+          strengths: ["Clear explanation", "Good understanding of scoping"],
+          areasToImprove: ["Could mention hoisting behavior"],
+          recommendations: ["Study variable hoisting in detail"]
+        }
+      } as any,
+      {
+        sessionId: session1.id,
+        questionId: jsQuestions[1].id,
+        turnNumber: 1,
+        userAnswer: "A closure is when a function has access to variables from its outer scope even after the outer function has returned.",
+        aiResponse: "Excellent! Can you provide a practical example?",
+        evaluation: {
+          grammar: 92,
+          technical: 88,
+          depth: 82,
+          communication: 90,
+          feedback: "Strong understanding of closures",
+          strengths: ["Concise definition", "Good technical accuracy"],
+          areasToImprove: ["Could provide code example"],
+          recommendations: ["Practice with real-world closure examples"]
+        }
+      } as any,
+      {
+        sessionId: session1.id,
+        questionId: jsQuestions[2].id,
+        turnNumber: 2,
+        userAnswer: "The event loop continuously checks the call stack and task queue. When the stack is empty, it moves tasks from the queue to the stack.",
+        aiResponse: "Great answer! You clearly understand the event loop.",
+        evaluation: {
+          grammar: 95,
+          technical: 90,
+          depth: 88,
+          communication: 92,
+          feedback: "Excellent explanation of event loop mechanics",
+          strengths: ["Complete explanation", "Good technical depth"],
+          areasToImprove: ["Could mention microtasks vs macrotasks"],
+          recommendations: ["Explore Promise queue vs callback queue"]
+        }
+      } as any
+    ]);
+
+    await db.insert(scores).values({
+      sessionId: session1.id,
+      userId: sampleUser.id,
+      grammarScore: 92,
+      technicalScore: 88,
+      depthScore: 82,
+      communicationScore: 90,
+      totalScore: 88,
+      grade: "B",
+      detailedFeedback: {
+        strengths: ["Clear explanation", "Good understanding of scoping", "Concise definition"],
+        improvements: ["Could mention hoisting behavior", "Could provide code example"],
+        recommendations: ["Study variable hoisting in detail", "Practice with real-world closure examples"]
+      }
+    } as any);
+
+    // Session 2 - React (completed 2 days ago)
+    const [session2] = await db.insert(interviewSessions).values({
+      userId: sampleUser.id,
+      topicId: reactTopic.id,
+      status: "completed",
+      currentQuestionIndex: 2,
+      questionIds: reactQuestions.slice(0, 2).map(q => q.id),
+      startedAt: twoDaysAgo,
+      completedAt: new Date(twoDaysAgo.getTime() + 25 * 60 * 1000)
+    } as any).returning();
+
+    await db.insert(interviewTurns).values([
+      {
+        sessionId: session2.id,
+        questionId: reactQuestions[0].id,
+        turnNumber: 0,
+        userAnswer: "React hooks like useState and useEffect allow functional components to have state and lifecycle methods.",
+        aiResponse: "Good! Can you explain why hooks were introduced?",
+        evaluation: {
+          grammar: 88,
+          technical: 92,
+          depth: 85,
+          communication: 90,
+          feedback: "Strong grasp of hooks",
+          strengths: ["Clear explanation", "Mentioned key hooks"],
+          areasToImprove: ["Could discuss the motivation behind hooks"],
+          recommendations: ["Study hooks design philosophy"]
+        }
+      } as any,
+      {
+        sessionId: session2.id,
+        questionId: reactQuestions[1].id,
+        turnNumber: 1,
+        userAnswer: "The virtual DOM is a lightweight copy of the actual DOM. React uses it to efficiently update only the parts that changed.",
+        aiResponse: "Excellent understanding!",
+        evaluation: {
+          grammar: 90,
+          technical: 88,
+          depth: 80,
+          communication: 87,
+          feedback: "Good understanding of virtual DOM",
+          strengths: ["Correct explanation", "Mentioned efficiency"],
+          areasToImprove: ["Could explain the diffing algorithm"],
+          recommendations: ["Deep dive into reconciliation process"]
+        }
+      } as any
+    ]);
+
+    await db.insert(scores).values({
+      sessionId: session2.id,
+      userId: sampleUser.id,
+      grammarScore: 89,
+      technicalScore: 90,
+      depthScore: 83,
+      communicationScore: 89,
+      totalScore: 88,
+      grade: "B",
+      detailedFeedback: {
+        strengths: ["Clear explanation", "Mentioned key hooks", "Correct explanation"],
+        improvements: ["Could discuss the motivation behind hooks", "Could explain the diffing algorithm"],
+        recommendations: ["Study hooks design philosophy", "Deep dive into reconciliation process"]
+      }
+    } as any);
+
+    // Session 3 - JavaScript (excellent score, 3 days ago)
+    const [session3] = await db.insert(interviewSessions).values({
+      userId: sampleUser.id,
+      topicId: jsTopic.id,
+      status: "completed",
+      currentQuestionIndex: 2,
+      questionIds: jsQuestions.slice(0, 2).map(q => q.id),
+      startedAt: threeDaysAgo,
+      completedAt: new Date(threeDaysAgo.getTime() + 20 * 60 * 1000)
+    } as any).returning();
+
+    await db.insert(interviewTurns).values([
+      {
+        sessionId: session3.id,
+        questionId: jsQuestions[0].id,
+        turnNumber: 0,
+        userAnswer: "let and const are block-scoped variables introduced in ES6. var is function-scoped and hoisted to the top of its scope. const creates read-only references.",
+        aiResponse: "Perfect! Very comprehensive.",
+        evaluation: {
+          grammar: 95,
+          technical: 95,
+          depth: 92,
+          communication: 94,
+          feedback: "Outstanding understanding",
+          strengths: ["Complete explanation", "Mentioned ES6", "Professional terminology"],
+          areasToImprove: ["Already excellent"],
+          recommendations: ["Explore advanced ES6+ features"]
+        }
+      } as any,
+      {
+        sessionId: session3.id,
+        questionId: jsQuestions[1].id,
+        turnNumber: 1,
+        userAnswer: "Closures occur when an inner function has access to the outer function's variables. They're useful for data privacy, creating function factories, and managing state in callbacks.",
+        aiResponse: "Excellent! Perfect answer.",
+        evaluation: {
+          grammar: 96,
+          technical: 94,
+          depth: 90,
+          communication: 95,
+          feedback: "Excellent technical knowledge",
+          strengths: ["Comprehensive answer", "Multiple use cases", "Clear examples"],
+          areasToImprove: ["None"],
+          recommendations: ["Practice implementing design patterns"]
+        }
+      } as any
+    ]);
+
+    await db.insert(scores).values({
+      sessionId: session3.id,
+      userId: sampleUser.id,
+      grammarScore: 96,
+      technicalScore: 95,
+      depthScore: 91,
+      communicationScore: 95,
+      totalScore: 94,
+      grade: "A",
+      detailedFeedback: {
+        strengths: ["Complete explanation", "Mentioned ES6", "Professional terminology", "Comprehensive answer", "Multiple use cases"],
+        improvements: ["Already excellent"],
+        recommendations: ["Explore advanced ES6+ features", "Practice implementing design patterns"]
+      }
+    } as any);
+
+    console.log("✅ Created 3 completed interview sessions with scores");
+
     console.log(`
 🎉 Seeding completed successfully!
 
 📝 Test Credentials:
    Admin: admin / admin123
    User:  testuser / user123
+
+📊 Sample Data Created:
+   - 3 completed interview sessions for testuser
+   - Scores: A (94%), B (88%), B (88%)
+   - Topics: JavaScript, React, System Design
 
 🚀 You can now log in and start using the application!
     `);
