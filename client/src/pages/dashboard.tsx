@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, TrendingUp, Clock, Award, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "wouter";
 import type { Score, InterviewSession } from "@shared/schema";
 
 export default function Dashboard() {
@@ -127,34 +128,35 @@ export default function Dashboard() {
             {recentSessions && recentSessions.length > 0 ? (
               <div className="space-y-3">
                 {recentSessions.slice(0, 3).map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover-elevate"
-                    data-testid={`session-${session.id}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{session.topicName || "Interview"}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {new Date(session.startedAt).toLocaleDateString()}
+                  <Link key={session.id} href={`/results/${session.id}`}>
+                    <div
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover-elevate cursor-pointer"
+                      data-testid={`session-${session.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{session.topicName || "Interview"}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {new Date(session.startedAt).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
+                      {session.score && (
+                        <div className="text-right">
+                          <div className="text-lg font-semibold">
+                            {session.score.totalScore}%
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {session.score.grade}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {session.score && (
-                      <div className="text-right">
-                        <div className="text-lg font-semibold">
-                          {session.score.totalScore}%
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {session.score.grade}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

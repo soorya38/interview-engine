@@ -15,6 +15,7 @@ import Dashboard from "@/pages/dashboard";
 import Tests from "@/pages/tests";
 import Interview from "@/pages/interview";
 import Results from "@/pages/results";
+import History from "@/pages/history";
 import Profile from "@/pages/profile";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminTopics from "@/pages/admin/topics";
@@ -61,6 +62,9 @@ function Router() {
       </Route>
       <Route path="/results/:sessionId">
         {() => <ProtectedRoute component={Results} />}
+      </Route>
+      <Route path="/history">
+        {() => <ProtectedRoute component={History} />}
       </Route>
       <Route path="/profile">
         {() => <ProtectedRoute component={Profile} />}

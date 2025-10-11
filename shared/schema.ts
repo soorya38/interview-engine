@@ -68,6 +68,9 @@ export const interviewTurns = pgTable("interview_turns", {
     depth: number;
     communication: number;
     feedback: string;
+    strengths?: string[];
+    areasToImprove?: string[];
+    recommendations?: string[];
   }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -1,4 +1,4 @@
-import { Home, BookOpen, FileQuestion, Users, BarChart3, User, LogOut } from "lucide-react";
+import { Home, BookOpen, FileQuestion, Users, BarChart3, User, LogOut, History } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +28,11 @@ export function AppSidebar() {
       title: "Tests",
       url: "/tests",
       icon: BookOpen,
+    },
+    {
+      title: "History",
+      url: "/history",
+      icon: History,
     },
     {
       title: "Profile",

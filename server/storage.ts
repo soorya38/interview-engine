@@ -73,7 +73,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(users).values([insertUser]).returning();
     return user;
   }
 
@@ -92,7 +92,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTopic(insertTopic: InsertTopic): Promise<Topic> {
-    const [topic] = await db.insert(topics).values(insertTopic).returning();
+    const [topic] = await db.insert(topics).values([insertTopic]).returning();
     return topic;
   }
 
@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
-    const [question] = await db.insert(questions).values(insertQuestion).returning();
+    const [question] = await db.insert(questions).values([insertQuestion]).returning();
     return question;
   }
 
@@ -144,7 +144,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSession(insertSession: InsertInterviewSession): Promise<InterviewSession> {
-    const [session] = await db.insert(interviewSessions).values(insertSession).returning();
+    const [session] = await db.insert(interviewSessions).values([insertSession]).returning();
     return session;
   }
 
@@ -159,7 +159,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTurn(insertTurn: InsertInterviewTurn): Promise<InterviewTurn> {
-    const [turn] = await db.insert(interviewTurns).values(insertTurn).returning();
+    const [turn] = await db.insert(interviewTurns).values([insertTurn]).returning();
     return turn;
   }
 
@@ -174,7 +174,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createScore(insertScore: InsertScore): Promise<Score> {
-    const [score] = await db.insert(scores).values(insertScore).returning();
+    const [score] = await db.insert(scores).values([insertScore]).returning();
     return score;
   }
 }

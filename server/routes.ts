@@ -319,6 +319,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           depth: evaluation.depth,
           communication: evaluation.communication,
           feedback: evaluation.feedback,
+          strengths: evaluation.strengths,
+          areasToImprove: evaluation.areasToImprove,
+          recommendations: evaluation.recommendations,
         },
       });
 
@@ -352,24 +355,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const grade = getGrade(totalScore);
 
-        // Generate feedback
-        const strengths: string[] = [];
-        const improvements: string[] = [];
-        const recommendations: string[] = [];
+        // Aggregate feedback from all turns
+        const allStrengths: string[] = [];
+        const allImprovements: string[] = [];
+        const allRecommendations: string[] = [];
 
-        if (avgTechnical >= 80) strengths.push("Strong technical knowledge and accuracy");
-        if (avgCommunication >= 80) strengths.push("Excellent communication and clarity");
-        if (avgGrammar >= 80) strengths.push("Good grammar and articulation");
-        if (avgDepth >= 80) strengths.push("Thorough and detailed responses");
+        allTurns.forEach(turn => {
+          if (turn.evaluation?.strengths) {
+            allStrengths.push(...turn.evaluation.strengths);
+          }
+          if (turn.evaluation?.areasToImprove) {
+            allImprovements.push(...turn.evaluation.areasToImprove);
+          }
+          if (turn.evaluation?.recommendations) {
+            allRecommendations.push(...turn.evaluation.recommendations);
+          }
+        });
 
-        if (avgTechnical < 70) improvements.push("Focus on deepening technical understanding");
-        if (avgCommunication < 70) improvements.push("Work on structuring answers more clearly");
-        if (avgGrammar < 70) improvements.push("Pay attention to grammar and sentence structure");
-        if (avgDepth < 70) improvements.push("Provide more detailed and comprehensive answers");
-
-        recommendations.push("Practice similar questions to build confidence");
-        recommendations.push("Review technical concepts before your next interview");
-        if (totalScore < 75) recommendations.push("Consider taking additional practice sessions");
+        // Remove duplicates and take top items
+        const strengths = Array.from(new Set(allStrengths)).slice(0, 5);
+        const improvements = Array.from(new Set(allImprovements)).slice(0, 5);
+        const recommendations = Array.from(new Set(allRecommendations)).slice(0, 5);
 
         const score = await storage.createScore({
           sessionId: session.id,
@@ -410,8 +416,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessions = await storage.getUserSessions(req.user!.userId);
       
+      // Filter only completed sessions and limit to 5 for dashboard
+      const completedSessions = sessions.filter(s => s.status === "completed");
+      
       const sessionsWithDetails = await Promise.all(
-        sessions.slice(0, 5).map(async (session) => {
+        completedSessions.slice(0, 5).map(async (session) => {
+          const topic = await storage.getTopic(session.topicId);
+          const score = await storage.getScore(session.id);
+          return {
+            ...session,
+            topicName: topic?.name,
+            score,
+          };
+        })
+      );
+
+      res.json(sessionsWithDetails);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sessions/history", authMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getUserSessions(req.user!.userId);
+      
+      // Get all completed sessions for history page
+      const completedSessions = sessions.filter(s => s.status === "completed");
+      
+      const sessionsWithDetails = await Promise.all(
+        completedSessions.map(async (session) => {
           const topic = await storage.getTopic(session.topicId);
           const score = await storage.getScore(session.id);
           return {
