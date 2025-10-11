@@ -488,6 +488,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/sessions/:id/quit", authMiddleware, async (req, res) => {
+    try {
+      const sessionId = req.params.id;
+      const session = await storage.getSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      if (session.userId !== req.user!.userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      if (session.status === "completed") {
+        return res.status(400).json({ error: "Session already completed" });
+      }
+
+      // Mark session as completed
+      await storage.updateSession(sessionId, { status: "completed" });
+
+      res.json({ message: "Session ended successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Stats routes
   app.get("/api/stats", authMiddleware, async (req, res) => {
     try {

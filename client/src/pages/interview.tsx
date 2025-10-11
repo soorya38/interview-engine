@@ -6,7 +6,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SendHorizontal, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { SendHorizontal, Loader2, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { InterviewSession, InterviewTurn } from "@shared/schema";
@@ -45,6 +56,27 @@ export default function Interview() {
       toast({
         variant: "destructive",
         title: "Failed to submit answer",
+        description: error.message || "Please try again",
+      });
+    },
+  });
+
+  const quitSessionMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/sessions/${sessionId}/quit`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
+      toast({
+        title: "Test ended",
+        description: "You have successfully quit the test.",
+      });
+      setLocation("/tests");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to quit test",
         description: error.message || "Please try again",
       });
     },
@@ -99,7 +131,42 @@ export default function Interview() {
             <span>
               Question {session.currentQuestionIndex + 1} of {session.totalQuestions}
             </span>
-            <span>{Math.round(progress)}% Complete</span>
+            <div className="flex items-center gap-4">
+              <span>{Math.round(progress)}% Complete</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                    <X className="h-4 w-4 mr-2" />
+                    Quit Test
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Quit Test?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to quit this test? Your progress will be saved, but you won't be able to continue from where you left off.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => quitSessionMutation.mutate()}
+                      disabled={quitSessionMutation.isPending}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {quitSessionMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Quitting...
+                        </>
+                      ) : (
+                        "Quit Test"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
           <Progress value={progress} className="h-2" data-testid="progress-interview" />
         </div>
