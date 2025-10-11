@@ -152,3 +152,32 @@ GEMINI_API_KEY=your_gemini_api_key
 SESSION_SECRET=your_jwt_secret
 NODE_ENV=development|production
 ```
+
+## Quick Start
+
+### Startup Script
+The project includes a convenient startup script (`start.sh`) that:
+1. Clears existing database data
+2. Seeds the database with default values
+3. Starts the development server (frontend + backend)
+
+**Usage**: `./start.sh`
+
+### Database Seeding
+The seed script (`server/seed.ts`) populates the database with:
+- **Test Users**: Admin (admin/admin123) and Test User (testuser/user123)
+- **Topics**: JavaScript Fundamentals, React Development, System Design
+- **Questions**: 8 interview questions across topics with varying difficulty
+- **Sample Sessions**: 3 completed interview sessions with scores (A, B, B)
+
+**Manual Usage**: `tsx server/seed.ts`
+
+The seed script is idempotent - it clears existing data before seeding, allowing safe re-runs.
+
+## Recent Changes
+
+### 2025-10-11: Database Seeding & Startup Automation
+- Updated seed script to clear existing data before seeding (idempotent operation)
+- Created startup script (`start.sh`) for one-command initialization
+- Added comprehensive sample data including users, topics, questions, and completed sessions
+- Fixed HTML validation issue with Badge component in profile page

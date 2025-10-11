@@ -137,14 +137,14 @@ export default function Profile() {
             <h1 className="text-3xl font-semibold mb-1" data-testid="text-username">
               {displayUser?.username}
             </h1>
-            <p className="text-muted-foreground flex items-center gap-2">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Badge variant="secondary" className="capitalize">
                 {displayUser?.role}
               </Badge>
               <span className="text-sm">
                 Member since {new Date(displayUser?.createdAt || "").toLocaleDateString()}
               </span>
-            </p>
+            </div>
           </div>
         </div>
         {!isEditing && (
