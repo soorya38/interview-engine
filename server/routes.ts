@@ -97,7 +97,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Topics routes
   app.get("/api/topics", authMiddleware, async (req, res) => {
     try {
-      const topics = await storage.getAllTopics();
+      const allTopics = await storage.getAllTopics();
+      
+      // Get all users once to avoid N+1 queries
+      const allUsers = await storage.getAllUsers();
+      const adminUserIds = new Set(
+        allUsers
+          .filter((user) => user.role === 'admin' || user.role === 'instructor')
+          .map((user) => user.id)
+      );
+      
+      // Filter topics to only show those created by admin/instructor users
+      const topics = allTopics.filter((topic) => 
+        topic.createdBy && adminUserIds.has(topic.createdBy)
+      );
       
       // Add question count for each topic
       const topicsWithCounts = await Promise.all(
