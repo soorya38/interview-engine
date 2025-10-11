@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +29,8 @@ export default function Login() {
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionRef = useRef(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -39,10 +41,18 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginInput) => {
-    if (isLoading) return; // Prevent double submission
+    // Prevent double submission with multiple checks
+    if (isLoading || isSubmitting || submissionRef.current) {
+      console.log("Login already in progress, ignoring duplicate submission");
+      return;
+    }
     
+    submissionRef.current = true;
     setIsLoading(true);
+    setIsSubmitting(true);
+    
     try {
+      console.log("Starting login process...");
       const response = await apiRequest("POST", "/api/auth/login", data);
       
       // Validate response before proceeding
@@ -50,21 +60,24 @@ export default function Login() {
         throw new Error("Invalid response from server");
       }
       
+      console.log("Login successful, updating auth state...");
+      // Update authentication state first
       login(response.user, response.token);
       
-      // Use setTimeout to ensure state updates are processed
-      setTimeout(() => {
-        if (response.user.role === "admin" || response.user.role === "instructor") {
-          setLocation("/admin");
-        } else {
-          setLocation("/dashboard");
-        }
-      }, 100);
-      
+      // Show success toast immediately
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
+      
+      // Force navigation after auth state update
+      console.log("Login complete, navigating...");
+      if (response.user.role === "admin" || response.user.role === "instructor") {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
+      
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
@@ -73,7 +86,9 @@ export default function Login() {
         description: error.message || "Invalid credentials",
       });
     } finally {
+      submissionRef.current = false;
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -135,10 +150,10 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
                 data-testid="button-login"
               >
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading || isSubmitting ? "Signing in..." : "Sign in"}
               </Button>
               <div className="text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}

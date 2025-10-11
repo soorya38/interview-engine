@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -44,8 +44,39 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
   return <Component />;
 }
 
+function RootRedirect() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Redirect to="/login" />;
+  }
+
+  if (user.role === "admin" || user.role === "instructor") {
+    return <Redirect to="/admin" />;
+  }
+
+  return <Redirect to="/dashboard" />;
+}
+
 function Router() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  // Force re-render when auth state changes
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <Switch>
@@ -82,15 +113,7 @@ function Router() {
         {() => <ProtectedRoute component={AdminUsers} adminOnly />}
       </Route>
       <Route path="/">
-        {() => {
-          if (user) {
-            if (user.role === "admin" || user.role === "instructor") {
-              return <Redirect to="/admin" />;
-            }
-            return <Redirect to="/dashboard" />;
-          }
-          return <Redirect to="/login" />;
-        }}
+        {() => <RootRedirect />}
       </Route>
       <Route component={NotFound} />
     </Switch>
@@ -98,13 +121,25 @@ function Router() {
 }
 
 function AppLayout() {
-  const { user } = useAuth();
-  const showSidebar = user && !["/login", "/register"].includes(window.location.pathname);
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+  
+  // Show sidebar if user is authenticated and not on login/register pages
+  const showSidebar = user && !isLoading && !["/login", "/register"].includes(location);
 
   const style = {
     "--sidebar-width": "280px",
     "--sidebar-width-icon": "4rem",
   } as React.CSSProperties;
+
+  // Show loading state while authentication is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   if (!showSidebar) {
     return <Router />;

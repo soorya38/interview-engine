@@ -51,12 +51,13 @@ export default function Register() {
         throw new Error("Invalid response from server");
       }
       
+      // Update authentication state first
       login(response.user, response.token);
       
-      // Use setTimeout to ensure state updates are processed
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 100);
+      // Wait for state to update before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      setLocation("/dashboard");
       
       toast({
         title: "Account created!",
