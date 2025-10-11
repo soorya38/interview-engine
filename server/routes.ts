@@ -501,14 +501,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
-      if (session.status === "completed") {
-        return res.status(400).json({ error: "Session already completed" });
+      if (session.status === "completed" || session.status === "abandoned") {
+        return res.status(400).json({ error: "Session already ended" });
       }
 
-      // Mark session as completed
-      await storage.updateSession(sessionId, { status: "completed" });
+      // Mark session as abandoned (quit)
+      await storage.updateSession(sessionId, { status: "abandoned" });
 
-      res.json({ message: "Session ended successfully" });
+      res.json({ message: "Session quit successfully" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
