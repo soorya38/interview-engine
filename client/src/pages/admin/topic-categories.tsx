@@ -72,15 +72,18 @@ export default function AdminTopicCategories() {
     defaultValues: {
       name: "",
       description: "",
-      iconName: "Tag",
+      iconName: "",
     },
   });
 
   const createTopicMutation = useMutation({
     mutationFn: async (data: Omit<InsertTopic, 'questionIds'>) => {
       const payload = {
-        ...data,
+        name: data.name,
+        description: data.description,
         questionIds: [], // Empty for topic categories
+        // Only include iconName if it's not empty
+        ...(data.iconName && { iconName: data.iconName }),
       };
       if (editingTopic) {
         return await apiRequest("PUT", `/api/topics/${editingTopic.id}`, payload);
@@ -130,7 +133,7 @@ export default function AdminTopicCategories() {
     setEditingTopic(topic);
     form.setValue("name", topic.name);
     form.setValue("description", topic.description || "");
-    form.setValue("iconName", topic.iconName || "Tag");
+    form.setValue("iconName", topic.iconName || "");
     setDialogOpen(true);
   };
 
@@ -207,32 +210,6 @@ export default function AdminTopicCategories() {
                           data-testid="textarea-category-description"
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="iconName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Icon</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an icon" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Tag">Tag</SelectItem>
-                          <SelectItem value="BookOpen">Book</SelectItem>
-                          <SelectItem value="Code">Code</SelectItem>
-                          <SelectItem value="Database">Database</SelectItem>
-                          <SelectItem value="Globe">Globe</SelectItem>
-                          <SelectItem value="Smartphone">Mobile</SelectItem>
-                          <SelectItem value="Server">Server</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

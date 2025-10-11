@@ -128,10 +128,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/topics", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const validated = insertTopicSchema.parse(req.body);
+      // Allow partial validation for topic categories (without questionIds)
+      const validated = insertTopicSchema.partial().parse(req.body);
       const topic = await storage.createTopic({
         ...validated,
         questionIds: validated.questionIds || [],
+        iconName: validated.iconName || null,
         createdBy: req.user!.userId,
       });
       res.json(topic);
