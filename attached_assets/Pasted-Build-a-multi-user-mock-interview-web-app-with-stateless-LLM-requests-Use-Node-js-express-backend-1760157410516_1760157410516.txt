@@ -1,0 +1,49 @@
+Build a multi-user mock interview web app with stateless LLM requests. Use Node.js + express backend; React + Vite frontend. Postgres for relational data, Redis for ephemeral session state. Use GeminiAPi for LLM(support for ollama as well); 
+
+usecase:
+AI MockMate is a multi-user, AI-powered mock interview platform designed to simulate real-time, conversational interviews for students, professionals, and institutions.
+It combines AI interviewing, automated scoring, grammar & communication evaluation, and career profile generation into one intelligent ecosystem.
+
+flow:
+→ (if admin/instructor) add topic
+→ add question for that topic
+→ create test from available topics/questions
+→ (if user) see all available tests
+→ select test
+→ AI conducts mock interview (conversational with TTS/STT)
+→ get score & feedback (grammar + technical evaluation)
+→ view older test summaries & progress
+→ profile updates automatically with new score insights
+→ generate ATS-friendly resume based on performance and skills
+
+Requirements:
+1) Auth: username/password (bcrypt) returning JWT + refresh token. Roles: user/admin/instructor.
+2) DB schema: implement tables users, topics, questions, interview_sessions, interview_turns, scores, resumes, audit_logs (see schema above). Use UUID PKs.
+3) Endpoints: auth, users, topics, questions, session; implement role-based middleware.
+5) LLM calls must be stateless. For each turn, send to LLM a prompt that includes: user profile summary, session metadata, question text, user_answer_text, prior_scores. LLM must return only JSON containing `interviewer_text` and `evaluation` as per the template. Validate the JSON strictly.
+6) Scoring rules: implement rubric mapping text to numeric scores (grammar, technical, depth, communication). Implement aggregation formula: total = 0.5*technical + 0.2*communication + 0.15*depth + 0.15*grammar.
+8) Profile & resume: implement LinkedIn-style profile and an endpoint that calls LLM to produce ATS-optimized JSON resume; render to PDF with Puppeteer and store in S3.
+9) Concurrency & scaling: use Redis for per-session locks and rate limiting. Use a worker queue (BullMQ) to process STT/LLM/evaluations so API remains responsive.
+
+Deliverable expectations:
+- Fully working backend + frontend repo 
+- DB migrations and seed data for admin + sample topics/questions.
+- Postman-like API spec (OpenAPI) and example request/responses for each critical endpoint.
+
+Use the following LLM prompt templates (exact text to implement in code):
+- Interviewer system prompt and JSON response schema (as detailed in the "Interviewer prompt template" above).
+- Resume generation prompt (as described in section 9).
+
+Priority list to implement (do this order, stop after finishing tests in each phase):
+Phase 0: infra, DB, auth, role middleware, seed.
+Phase 1: sessions, websocket turn flow, LLM worker (ollama, geminiAPI), frontend interview page.
+Phase 2: integrate real STT & TTS, store audio, implement summary and resume generation.
+Phase 3: admin UI, analytics, privacy features, production deploy.
+
+Make sure everything is production-grade:
+- Hash all tokens in DB,
+- Validate user input, sanitize for prompt injection (e.g., escape user-supplied strings in prompts or use JSON embedding),
+
+Return:
+- `README.md` that includes environment variables, local dev steps, and architecture diagram.
+- Postman/Swagger spec and steps to generate credentials for OpenAI/Deepgram/ElevenLabs.
