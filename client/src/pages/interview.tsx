@@ -37,6 +37,7 @@ export default function Interview() {
       setAnswer("");
       
       if (data.completed) {
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
         setLocation(`/results/${sessionId}`);
       }
     },
