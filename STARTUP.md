@@ -2,9 +2,11 @@
 
 ## 🚀 Starting the Application
 
-### Option 1: One-Command Startup (Recommended)
+### Development Mode
 
-Run the startup script that seeds the database and starts the application:
+#### Option 1: One-Command Startup (Recommended)
+
+Run the startup script that seeds the database and starts the development server:
 
 ```bash
 ./start.sh
@@ -13,9 +15,9 @@ Run the startup script that seeds the database and starts the application:
 This script will:
 1. Clear any existing data
 2. Seed the database with default values (users, topics, questions, sample sessions)
-3. Start the development server (frontend + backend)
+3. Start the development server (frontend + backend with hot-reload)
 
-### Option 2: Manual Steps
+#### Option 2: Manual Steps
 
 If you prefer to run commands separately:
 
@@ -26,6 +28,30 @@ tsx server/seed.ts
 # 2. Start the development server
 npm run dev
 ```
+
+### Production Mode
+
+#### One-Command Production Startup
+
+For production deployment, use the production startup script:
+
+```bash
+./start-production.sh
+```
+
+This script will:
+1. ✅ Verify all required environment variables are set
+2. 📊 Push database schema to PostgreSQL
+3. 📦 Seed database with default values
+4. 🔨 Build the application (optimized production bundles)
+5. 🚀 Start the production server
+
+**Required Environment Variables:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `GEMINI_API_KEY` - Google Gemini AI API key
+- `SESSION_SECRET` - JWT secret for authentication
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
 
 ## 📊 Default Data
 
