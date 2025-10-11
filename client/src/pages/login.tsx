@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,11 +26,23 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submissionRef = useRef(false);
+
+  // Handle navigation after successful login
+  useEffect(() => {
+    if (user) {
+      console.log("User detected in Login component, navigating...");
+      if (user.role === "admin" || user.role === "instructor") {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
+    }
+  }, [user, setLocation]);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -61,7 +73,7 @@ export default function Login() {
       }
       
       console.log("Login successful, updating auth state...");
-      // Update authentication state first
+      // Update authentication state - useEffect will handle navigation
       login(response.user, response.token);
       
       // Show success toast immediately
@@ -70,13 +82,7 @@ export default function Login() {
         description: "You have successfully logged in.",
       });
       
-      // Force navigation after auth state update
-      console.log("Login complete, navigating...");
-      if (response.user.role === "admin" || response.user.role === "instructor") {
-        setLocation("/admin");
-      } else {
-        setLocation("/dashboard");
-      }
+      console.log("Login complete, auth state updated - useEffect will handle navigation");
       
     } catch (error: any) {
       console.error("Login error:", error);

@@ -47,6 +47,8 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
 function RootRedirect() {
   const { user, isLoading } = useAuth();
 
+  console.log("RootRedirect render - user:", user?.username, "isLoading:", isLoading);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -56,18 +58,24 @@ function RootRedirect() {
   }
 
   if (!user) {
+    console.log("RootRedirect: No user, redirecting to login");
     return <Redirect to="/login" />;
   }
 
   if (user.role === "admin" || user.role === "instructor") {
+    console.log("RootRedirect: Admin user, redirecting to admin");
     return <Redirect to="/admin" />;
   }
 
+  console.log("RootRedirect: Regular user, redirecting to dashboard");
   return <Redirect to="/dashboard" />;
 }
 
 function Router() {
   const { user, isLoading } = useAuth();
+
+  // Debug logging
+  console.log("Router render - user:", user?.username, "isLoading:", isLoading);
 
   // Force re-render when auth state changes
   if (isLoading) {
@@ -78,8 +86,9 @@ function Router() {
     );
   }
 
+  // Use key to force re-render when user changes
   return (
-    <Switch>
+    <Switch key={user?.id || 'no-user'}>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard">
