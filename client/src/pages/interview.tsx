@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function Interview() {
   const { toast } = useToast();
   const [answer, setAnswer] = useState("");
 
+
   const { data: session, isLoading } = useQuery<InterviewSession & {
     currentQuestion?: { questionText: string };
     turns?: InterviewTurn[];
@@ -46,6 +47,7 @@ export default function Interview() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
       setAnswer("");
+      resetTranscript();
       
       if (data.completed) {
         queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
@@ -210,6 +212,8 @@ export default function Interview() {
                 data-testid="textarea-answer"
               />
             </div>
+            
+
             <div className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">
                 Take your time and provide a thoughtful answer
