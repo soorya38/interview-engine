@@ -35,6 +35,17 @@ export default function Interview() {
     totalQuestions?: number;
   }>({
     queryKey: ["/api/sessions", sessionId],
+    queryFn: async () => {
+      const data = await apiRequest("GET", `/api/sessions/${sessionId}`);
+      return data;
+    },
+    enabled: !!sessionId,
+    refetchInterval: (data) => {
+      if (data?.status === "completed") {
+        return false;
+      }
+      return 1000;
+    },
   });
 
   const submitAnswerMutation = useMutation({
@@ -47,7 +58,6 @@ export default function Interview() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
       setAnswer("");
-      resetTranscript();
       
       if (data.completed) {
         queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
@@ -185,14 +195,27 @@ export default function Interview() {
             </div>
 
             {session.turns && session.turns.length > 0 && (
-              <div className="pt-6 border-t border-border">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                  AI Feedback
-                </h3>
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm leading-relaxed" data-testid="text-ai-response">
-                    {session.turns[session.turns.length - 1]?.aiResponse}
-                  </p>
+              <div className="pt-6 border-t border-border space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                    Your Answer
+                  </h3>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+                    <p className="text-sm leading-relaxed" data-testid="text-user-answer">
+                      {session.turns[session.turns.length - 1]?.userAnswer}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                    AI Feedback
+                  </h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm leading-relaxed" data-testid="text-ai-response">
+                      {session.turns[session.turns.length - 1]?.aiResponse}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
