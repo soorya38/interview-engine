@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -17,9 +17,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SendHorizontal, Loader2, X } from "lucide-react";
+import { SendHorizontal, Loader2, X, Mic, MicOff, Square } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import type { InterviewSession, InterviewTurn } from "@shared/schema";
 
 export default function Interview() {
@@ -27,6 +28,54 @@ export default function Interview() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [answer, setAnswer] = useState("");
+  const answerRef = useRef(answer);
+  
+  // Update ref when answer changes
+  useEffect(() => {
+    answerRef.current = answer;
+  }, [answer]);
+
+  // Speech-to-text functionality
+  const {
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    transcript,
+    interimTranscript,
+    error: speechError,
+    resetTranscript,
+    countdown
+  } = useSpeechToText({
+    onResult: (text) => {
+      setAnswer(prev => prev + text);
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Speech Recognition Error",
+        description: error,
+      });
+    },
+    onAutoSubmit: (transcript) => {
+      console.log("Auto-submit triggered with transcript:", transcript);
+      console.log("Current answer ref:", answerRef.current);
+      console.log("Answer ref length:", answerRef.current.length);
+      
+      // Check if transcript has more than 1 character
+      if (transcript.trim().length > 1) {
+        console.log("Auto-submitting answer with transcript:", transcript);
+        // Set the answer to the full transcript from speech recognition
+        setAnswer(transcript);
+        // Submit directly with the transcript instead of relying on state
+        submitAnswerMutation.mutate(transcript);
+      } else {
+        console.log("Auto-submit skipped - Transcript too short (length:", transcript.trim().length, ")");
+      }
+    },
+    autoStart: false,
+    silenceTimeout: 4000
+  });
 
 
   const { data: session, isLoading } = useQuery<InterviewSession & {
@@ -104,6 +153,33 @@ export default function Interview() {
       return;
     }
     submitAnswerMutation.mutate(answer);
+  };
+
+  const handleStartListening = () => {
+    console.log("handleStartListening called");
+    console.log("isSupported:", isSupported);
+    console.log("isListening:", isListening);
+    
+    if (!isSupported) {
+      console.log("Speech recognition not supported");
+      toast({
+        variant: "destructive",
+        title: "Speech Recognition Not Supported",
+        description: "Your browser doesn't support speech recognition. Please use a modern browser like Chrome or Edge.",
+      });
+      return;
+    }
+    
+    console.log("Starting speech recognition...");
+    startListening();
+  };
+
+  const handleStopListening = () => {
+    try {
+      stopListening();
+    } catch (error) {
+      console.error("Error stopping speech recognition:", error);
+    }
   };
 
   if (isLoading) {
@@ -229,11 +305,69 @@ export default function Interview() {
               <Textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer here..."
+                placeholder="Type your answer here or use voice input..."
                 className="min-h-[200px] resize-none"
                 disabled={submitAnswerMutation.isPending}
                 data-testid="textarea-answer"
               />
+            </div>
+
+            {/* Speech-to-Text Controls */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isListening ? "destructive" : "outline"}
+                  size="sm"
+                  onClick={isListening ? handleStopListening : handleStartListening}
+                  disabled={submitAnswerMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {isListening ? (
+                    <>
+                      <Square className="h-4 w-4" />
+                      Stop Recording
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4" />
+                      Start Voice Input
+                    </>
+                  )}
+                </Button>
+
+                {isListening && (
+                  <div className="flex items-center gap-2 text-sm">
+                    {countdown > 0 ? (
+                      <span className="text-orange-600 font-medium animate-pulse">
+                        ⏰ Auto-submitting in {countdown}s... Speak to cancel
+                      </span>
+                    ) : (
+                      <span className="text-green-600">🎤 Listening... Speak now</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Speech Status Messages */}
+              {speechError && (
+                <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950/20 p-2 rounded">
+                  {speechError}
+                </div>
+              )}
+
+              {!isSupported && (
+                <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
+                  Speech recognition is not supported in this browser. Please use Chrome or Edge for voice input.
+                </div>
+              )}
+
+              {/* Interim transcript display */}
+              {interimTranscript && (
+                <div className="text-sm text-gray-600 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                  <span className="font-medium">Live transcript:</span> {interimTranscript}
+                </div>
+              )}
             </div>
             
 

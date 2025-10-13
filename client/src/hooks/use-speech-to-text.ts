@@ -3,7 +3,7 @@ import React, { useState, useRef, useCallback } from 'react';
 interface SpeechToTextOptions {
   onResult?: (text: string) => void;
   onError?: (error: string) => void;
-  onAutoSubmit?: () => void;
+  onAutoSubmit?: (transcript: string) => void;
   continuous?: boolean;
   interimResults?: boolean;
   language?: string;
@@ -40,6 +40,7 @@ export function useSpeechToText({
   const [countdown, setCountdown] = useState(0);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const transcriptRef = useRef('');
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const silenceCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,8 +88,11 @@ export function useSpeechToText({
       setCountdown(currentCount);
     }, 1000);
     
+    console.log("Setting silence timeout for", silenceTimeout, "ms");
     silenceTimeoutRef.current = setTimeout(() => {
+      console.log("Silence timeout triggered, isListening:", isListeningRef.current);
       if (isListeningRef.current) {
+        console.log("Stopping recognition and calling auto-submit with transcript:", transcriptRef.current);
         // Stop listening first
         if (recognitionRef.current) {
           recognitionRef.current.stop();
@@ -98,26 +102,35 @@ export function useSpeechToText({
         clearSilenceTimeout();
         clearCountdown();
         
-        // Then call auto-submit
-        onAutoSubmit?.();
+        // Then call auto-submit with current transcript
+        onAutoSubmit?.(transcriptRef.current);
       }
     }, silenceTimeout);
   }, [silenceTimeout, clearSilenceTimeout, clearCountdown, onAutoSubmit]);
 
   const startListening = useCallback(() => {
+    console.log("useSpeechToText: startListening called");
+    console.log("isSupported:", isSupported);
+    console.log("isListening:", isListening);
+    
     if (!isSupported) {
+      console.log("Speech recognition not supported in browser");
       setError('Speech recognition is not supported in this browser');
       onError?.('Speech recognition is not supported in this browser');
       return;
     }
 
     if (isListening) {
+      console.log("Already listening, ignoring start request");
       return;
     }
 
     try {
+      console.log("Creating SpeechRecognition instance...");
       const SpeechRecognition = window.webkitSpeechRecognition || (window as any).SpeechRecognition;
+      console.log("SpeechRecognition constructor:", SpeechRecognition);
       const recognition = new SpeechRecognition();
+      console.log("Recognition instance created:", recognition);
       
       recognition.continuous = true; // Always use continuous for better silence detection
       recognition.interimResults = true; // Always use interim results
@@ -125,6 +138,7 @@ export function useSpeechToText({
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
+        console.log("Speech recognition started successfully");
         setIsListening(true);
         isListeningRef.current = true;
         setError(null);
@@ -146,19 +160,21 @@ export function useSpeechToText({
               clearSilenceTimeout();
               clearCountdown();
               clearSilenceCheck();
-              onAutoSubmit?.();
+              onAutoSubmit?.(transcriptRef.current);
             }
           }
         }, 1000); // Check every second
       };
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
+        console.log("Speech recognition result received:", event);
         let finalTranscript = '';
         let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           const transcript = result[0].transcript;
+          console.log(`Result ${i}: "${transcript}" (isFinal: ${result.isFinal})`);
 
           if (result.isFinal) {
             finalTranscript += transcript;
@@ -179,6 +195,7 @@ export function useSpeechToText({
         if (finalTranscript) {
           setTranscript(prev => {
             const newTranscript = prev + finalTranscript;
+            transcriptRef.current = newTranscript;
             onResult?.(finalTranscript);
             return newTranscript;
           });
@@ -189,7 +206,7 @@ export function useSpeechToText({
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         try {
-          console.error('Speech recognition error:', event.error);
+          console.error('Speech recognition error:', event.error, event.message);
           let errorMessage = 'Speech recognition error occurred';
           
           switch (event.error) {
@@ -255,8 +272,11 @@ export function useSpeechToText({
       };
 
       recognitionRef.current = recognition;
+      console.log("Starting speech recognition...");
       recognition.start();
+      console.log("Speech recognition start() called");
     } catch (err) {
+      console.error("Error starting speech recognition:", err);
       const errorMessage = 'Failed to start speech recognition';
       setError(errorMessage);
       onError?.(errorMessage);
