@@ -27,385 +27,368 @@ async function seed() {
         password: hashedPassword,
         role: "admin",
         fullName: "Admin User",
-        email: "admin@aimockmate.com",
+        email: "admin@srishakthi.ac.in",
       })
       .returning();
 
     console.log("✅ Created admin user:", admin.username);
 
-    // Create sample user
-    const userHashedPassword = await hashPassword("user123");
-    const [sampleUser] = await db
-      .insert(users)
-      .values({
-        username: "testuser",
-        password: userHashedPassword,
-        role: "user",
-        fullName: "Test User",
-        email: "user@example.com",
-      })
-      .returning();
+    // Create all student users with password "Siet@123"
+    const studentPassword = await hashPassword("Siet@123");
+    const studentEmails = [
+      "ramalingamm22ece@srishakthi.ac.in",
+      "gowthamg22cys@srishakthi.ac.in",
+      "kesavans22cys@srishakthi.ac.in",
+      "noorafikjalaludeena22ads@srishakthi.ac.in",
+      "rishir22ads@srishakthi.ac.in",
+      "sivraamkrishnankv22ads@srishakthi.ac.in",
+      "varuns22ads@srishakthi.ac.in",
+      "deepakt22aml@srishakthi.ac.in",
+      "prakashdassr22aml@srishakthi.ac.in",
+      "abdulgousea22it@srishakthi.ac.in",
+      "ancyjemigoldbellp22cse@srishakthi.ac.in",
+      "mohammedasani22cse@srishakthi.ac.in",
+      "vishwar22cse@srishakthi.ac.in",
+      "yasinmalikj22ece@srishakthi.ac.in",
+      "ajaykumarjs22cys@srishakthi.ac.in",
+      "mohamedrafill22ads@srishakthi.ac.in",
+      "kirthikaamk22aml@srishakthi.ac.in",
+      "sanjeevikumarm22aml@srishakthi.ac.in",
+      "deeksheethn22it@srishakthi.ac.in",
+      "matheshm22it@srishakthi.ac.in",
+      "ponnarasua22it@srishakthi.ac.in",
+      "tharanil22cse@srishakthi.ac.in",
+      "dhivanans22eee@srishakthi.ac.in",
+      "maheshkumaark22ads@srishakthi.ac.in",
+      "mohammedasathk22ads@srishakthi.ac.in",
+      "karthikadevim22it@srishakthi.ac.in",
+      "mervinj22it@srishakthi.ac.in",
+      "madhang22ece@srishakthi.ac.in",
+      "sriramm22ece@srishakthi.ac.in",
+      "yuvankrishnap22cys@srishakthi.ac.in",
+      "harishj22ads@srishakthi.ac.in",
+      "harishp22ads@srishakthi.ac.in",
+      "bharathg22aml@srishakthi.ac.in",
+      "harinivasm22aml@srishakthi.ac.in",
+      "harshadd22aml@srishakthi.ac.in",
+      "dilipkumarn22it@srishakthi.ac.in",
+      "sivadharshinin22cse@srishakthi.ac.in",
+      "thulasikishorep22cse@srishakthi.ac.in",
+      "ridhinyab22ads@srishakthi.ac.in",
+      "ravichandranr22aml@srishakthi.ac.in",
+      "dharshand22it@srishakthi.ac.in",
+      "prabincs22cse@srishakthi.ac.in",
+      "saieshcb22cse@srishakthi.ac.in",
+      "dineshkumargm22ads@srishakthi.ac.in",
+      "seemamaglins22ads@srishakthi.ac.in",
+      "krishnant22aml@srishakthi.ac.in",
+      "robinanburajb22aml@srishakthi.ac.in",
+      "suryar22cse@srishakthi.ac.in",
+      "venyabalab22cse@srishakthi.ac.in",
+      "edwinrajaa22cys@srishakthi.ac.in",
+      "shanjaiysb22cys@srishakthi.ac.in",
+      "deepikas22ads@srishakthi.ac.in",
+      "nihasb22ads@srishakthi.ac.in",
+      "divyaprabhag22it@srishakthi.ac.in",
+      "magibalans22it@srishakthi.ac.in",
+      "sanjayr22cse@srishakthi.ac.in",
+      "balupiraveenk22ece@srishakthi.ac.in",
+      "mohammedakmals22cys@srishakthi.ac.in",
+      "vishwanathasriramm22cys@srishakthi.ac.in",
+      "meenup22ads@srishakthi.ac.in",
+      "naveenkumarj22ads@srishakthi.ac.in",
+      "sarayumam22ads@srishakthi.ac.in",
+      "rahulrn22aml@srishakthi.ac.in",
+      "shasaankg22aml@srishakthi.ac.in",
+      "harishk22it@srishakthi.ac.in",
+      "tharunm22eee@srishakthi.ac.in",
+      "saranprakashr22ads@srishakthi.ac.in",
+      "harisshks22cse@srishakthi.ac.in",
+      "rohithu22cse@srishakthi.ac.in",
+      "abigurug22ece@srishakthi.ac.in",
+      "anandhithac22ece@srishakthi.ac.in",
+      "anushnu22cys@srishakthi.ac.in",
+      "jeevak22cys@srishakthi.ac.in",
+      "Karthickb22ads@srishakthi.ac.in",
+      "shikhasrinivas22ads@srishakthi.ac.in",
+      "snehalaanandkumar22aml@srishakthi.ac.in",
+      "meenaumadevim22it@srishakthi.ac.in",
+      "janarthana22ece@srishakthi.ac.in",
+      "pavithran22ece@srishakthi.ac.in",
+      "raghulkrishnac22ece@srishakthi.ac.in",
+      "albintenny22cys@srishakthi.ac.in",
+      "narendranav22cys@srishakthi.ac.in",
+      "monishv22aml@srishakthi.ac.in",
+      "sweathaj22aml@srishakthi.ac.in",
+      "adithyars22cse@srishakthi.ac.in",
+      "bhavishnus22cse@srishakthi.ac.in",
+      "shalinis22cse@srishakthi.ac.in",
+      "sridhars22cse@srishakthi.ac.in",
+      "karthikeyanscse@srishakthi.ac.in",
+      "nirmalmuraris22ece@srishakthi.ac.in",
+      "nithishkumarvv22ece@srishakthi.ac.in",
+      "nivethav22cse@srishakthi.ac.in",
+      "thirukumaranyuvaraj22cys@srishakthi.ac.in",
+      "sandhyav22ads@srishakthi.ac.in",
+      "sibis22aml@srishakthi.ac.in",
+      "abinayas22it@srishakthi.ac.in",
+      "kumarans22it@srishakthi.ac.in",
+    ];
 
-    console.log("✅ Created sample user:", sampleUser.username);
+    const studentUsers = [];
+    for (const email of studentEmails) {
+      // Extract username from email (part before @)
+      const username = email.split("@")[0];
+      // Extract full name from username (capitalize first letters)
+      const fullName = username
+        .replace(/[0-9]/g, " ")
+        .split(" ")
+        .filter((s) => s.length > 0)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      const [user] = await db
+        .insert(users)
+        .values({
+          username,
+          password: studentPassword,
+          role: "user",
+          fullName: fullName || username,
+          email,
+        })
+        .returning();
+
+      studentUsers.push(user);
+    }
+
+    console.log(`✅ Created ${studentUsers.length} student users`);
 
     // Create topic categories
-    const [jsTopicCategory] = await db
+    const [javaTopicCategory] = await db
       .insert(topicCategories)
       .values({
-        name: "JavaScript Fundamentals",
-        description: "Core JavaScript concepts and best practices",
+        name: "Java",
+        description: "Java programming fundamentals and concepts",
         iconName: "BookOpen",
         createdBy: admin.id,
       })
       .returning();
 
-    const [reactTopicCategory] = await db
+    const [pythonTopicCategory] = await db
       .insert(topicCategories)
       .values({
-        name: "React Development",
-        description: "React components, hooks, and state management",
+        name: "Python",
+        description: "Python programming fundamentals and concepts",
         iconName: "BookOpen",
         createdBy: admin.id,
       })
       .returning();
 
-    const [systemDesignTopicCategory] = await db
-      .insert(topicCategories)
-      .values({
-        name: "System Design",
-        description: "Scalability, architecture, and design patterns",
-        iconName: "BookOpen",
-        createdBy: admin.id,
-      })
-      .returning();
+    console.log("✅ Created topic categories: Java, Python");
 
-    console.log("✅ Created topic categories");
+    // Create Java questions
+    const javaQuestions = [
+      {
+        questionText: "Which company owns Java now and what is the latest version?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["Oracle", "version", "ownership"],
+      },
+      {
+        questionText: "What are the 2 steps in Java compilation. Explain the 2 steps",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["compile", "bytecode", "execution"],
+      },
+      {
+        questionText: "Explain the difference between Java compiler & Interpreter",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["compiler", "interpreter", "bytecode", "machine code"],
+      },
+      {
+        questionText: "Is JVM platform independent?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["JVM", "platform dependent", "platform independent"],
+      },
+      {
+        questionText: "How does java ensure portability",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["bytecode", "JVM", "platform independent"],
+      },
+      {
+        questionText: "Explain JVM, JRE, JDK",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["JVM", "JRE", "JDK", "relationship"],
+      },
+      {
+        questionText: "What is a class loader? What is its purpose?",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["class loader", "loading", "classes", "runtime"],
+      },
+      {
+        questionText: "Explain each word public static void main(String[] args)",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["public", "static", "void", "main", "String array"],
+      },
+      {
+        questionText: "What is meant by a package in Java?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["package", "namespace", "organization", "classes"],
+      },
+      {
+        questionText: "When an object is created, is the memory allocated in stack or heap?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["heap", "object", "memory allocation"],
+      },
+      {
+        questionText: "What is Java String pool?",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["String pool", "memory", "optimization", "strings"],
+      },
+    ];
 
-    // Create questions for JavaScript Fundamentals
-    await db.insert(questions).values([
-      {
-        topicCategoryId: jsTopicCategory.id,
-        questionText: "Explain the difference between let, const, and var in JavaScript.",
-        difficulty: "easy",
-        expectedKeyPoints: ["block scope", "hoisting", "reassignment"],
+    await db.insert(questions).values(
+      javaQuestions.map((q) => ({
+        topicCategoryId: javaTopicCategory.id,
+        questionText: q.questionText,
+        difficulty: q.difficulty,
+        expectedKeyPoints: q.expectedKeyPoints,
         createdBy: admin.id,
-      },
-      {
-        topicCategoryId: jsTopicCategory.id,
-        questionText: "What is a closure in JavaScript and when would you use one?",
-        difficulty: "medium",
-        expectedKeyPoints: ["lexical scope", "function", "private variables"],
-        createdBy: admin.id,
-      },
-      {
-        topicCategoryId: jsTopicCategory.id,
-        questionText: "Explain the event loop in JavaScript.",
-        difficulty: "hard",
-        expectedKeyPoints: ["call stack", "callback queue", "asynchronous"],
-        createdBy: admin.id,
-      },
-    ]);
+      }))
+    );
 
-    // Create questions for React
-    await db.insert(questions).values([
-      {
-        topicCategoryId: reactTopicCategory.id,
-        questionText: "What are React hooks and why are they useful?",
-        difficulty: "easy",
-        expectedKeyPoints: ["useState", "useEffect", "functional components"],
-        createdBy: admin.id,
-      },
-      {
-        topicCategoryId: reactTopicCategory.id,
-        questionText: "Explain the virtual DOM and how React uses it for performance.",
-        difficulty: "medium",
-        expectedKeyPoints: ["diffing algorithm", "reconciliation", "performance"],
-        createdBy: admin.id,
-      },
-      {
-        topicCategoryId: reactTopicCategory.id,
-        questionText: "How would you optimize a React application that has performance issues?",
-        difficulty: "hard",
-        expectedKeyPoints: ["memoization", "lazy loading", "code splitting"],
-        createdBy: admin.id,
-      },
-    ]);
+    console.log(`✅ Created ${javaQuestions.length} Java questions`);
 
-    // Create questions for System Design
-    await db.insert(questions).values([
+    // Create Python questions
+    const pythonQuestions = [
       {
-        topicCategoryId: systemDesignTopicCategory.id,
-        questionText: "How would you design a URL shortening service like bit.ly?",
-        difficulty: "medium",
-        expectedKeyPoints: ["database", "hash function", "scalability"],
-        createdBy: admin.id,
+        questionText: "What is list comprehension? Give an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["list comprehension", "syntax", "example", "iteration"],
       },
       {
-        topicCategoryId: systemDesignTopicCategory.id,
-        questionText: "Explain how you would design a rate limiting system.",
-        difficulty: "hard",
-        expectedKeyPoints: ["algorithms", "distributed systems", "caching"],
-        createdBy: admin.id,
+        questionText: "What happens when you assign list2 = list1?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["reference", "shallow copy", "same object"],
       },
-    ]);
+      {
+        questionText: "Explain slicing function in python",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["slicing", "syntax", "start", "stop", "step"],
+      },
+      {
+        questionText: "What is the difference between a list and a dictionary",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["list", "dictionary", "key-value", "ordered"],
+      },
+      {
+        questionText: "What is the use of pass statement in python. Give an example",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["pass", "placeholder", "null operation", "example"],
+      },
+      {
+        questionText: "How is exception handling done in python",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["try", "except", "exception handling", "finally"],
+      },
+      {
+        questionText: "What is a lambda function? Give an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["lambda", "anonymous function", "syntax", "example"],
+      },
+      {
+        questionText: "How are arguments passed to functions - by value or by reference in Python?",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["pass by reference", "pass by value", "object reference"],
+      },
+      {
+        questionText: "Can we pass a function as an argument in python? Give an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["first-class function", "higher-order function", "example"],
+      },
+      {
+        questionText: "Explain try except block in python with an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["try", "except", "exception", "example", "error handling"],
+      },
+      {
+        questionText: "What are the different variable scopes in python",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["local", "global", "nonlocal", "scope"],
+      },
+    ];
 
-    console.log("✅ Created sample questions");
+    await db.insert(questions).values(
+      pythonQuestions.map((q) => ({
+        topicCategoryId: pythonTopicCategory.id,
+        questionText: q.questionText,
+        difficulty: q.difficulty,
+        expectedKeyPoints: q.expectedKeyPoints,
+        createdBy: admin.id,
+      }))
+    );
+
+    console.log(`✅ Created ${pythonQuestions.length} Python questions`);
 
     // Get all questions for creating tests
-    const jsQuestions = await db.select().from(questions).where(eq(questions.topicCategoryId, jsTopicCategory.id));
-    const reactQuestions = await db.select().from(questions).where(eq(questions.topicCategoryId, reactTopicCategory.id));
+    const allJavaQuestions = await db
+      .select()
+      .from(questions)
+      .where(eq(questions.topicCategoryId, javaTopicCategory.id));
+    
+    const allPythonQuestions = await db
+      .select()
+      .from(questions)
+      .where(eq(questions.topicCategoryId, pythonTopicCategory.id));
 
     // Create tests
-    const [jsTest] = await db.insert(tests).values({
-      name: "JavaScript Fundamentals Test",
-      description: "Test your JavaScript knowledge with fundamental concepts",
-      questionIds: jsQuestions.map(q => q.id),
-      duration: 30,
-      difficulty: "mixed",
-      isActive: true,
-      createdBy: admin.id,
-    }).returning();
+    const [javaTest] = await db
+      .insert(tests)
+      .values({
+        name: "Java Fundamentals Test",
+        description: "Comprehensive Java programming assessment covering core concepts",
+        questionIds: allJavaQuestions.map((q) => q.id),
+        duration: 60,
+        difficulty: "mixed",
+        isActive: true,
+        createdBy: admin.id,
+      })
+      .returning();
 
-    const [reactTest] = await db.insert(tests).values({
-      name: "React Development Test", 
-      description: "Comprehensive React knowledge assessment",
-      questionIds: reactQuestions.map(q => q.id),
-      duration: 45,
-      difficulty: "mixed",
-      isActive: true,
-      createdBy: admin.id,
-    }).returning();
+    const [pythonTest] = await db
+      .insert(tests)
+      .values({
+        name: "Python Fundamentals Test",
+        description: "Comprehensive Python programming assessment covering core concepts",
+        questionIds: allPythonQuestions.map((q) => q.id),
+        duration: 60,
+        difficulty: "mixed",
+        isActive: true,
+        createdBy: admin.id,
+      })
+      .returning();
 
-    console.log("✅ Created sample tests");
-
-    // Create completed interview sessions for testuser
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-
-    // Session 1 - JavaScript (completed yesterday)
-    const [session1] = await db.insert(interviewSessions).values({
-      userId: sampleUser.id,
-      testId: jsTest.id,
-      status: "completed",
-      currentQuestionIndex: 3,
-      questionIds: jsQuestions.slice(0, 3).map(q => q.id),
-      startedAt: oneDayAgo,
-      completedAt: new Date(oneDayAgo.getTime() + 30 * 60 * 1000)
-    } as any).returning();
-
-    await db.insert(interviewTurns).values([
-      {
-        sessionId: session1.id,
-        questionId: jsQuestions[0].id,
-        turnNumber: 0,
-        userAnswer: "let and const are block-scoped while var is function-scoped. const cannot be reassigned.",
-        aiResponse: "Good explanation! Can you elaborate on hoisting?",
-        evaluation: {
-          grammar: 90,
-          technical: 85,
-          depth: 75,
-          communication: 88,
-          feedback: "Clear explanation of scoping differences",
-          strengths: ["Clear explanation", "Good understanding of scoping"],
-          areasToImprove: ["Could mention hoisting behavior"],
-          recommendations: ["Study variable hoisting in detail"]
-        }
-      } as any,
-      {
-        sessionId: session1.id,
-        questionId: jsQuestions[1].id,
-        turnNumber: 1,
-        userAnswer: "A closure is when a function has access to variables from its outer scope even after the outer function has returned.",
-        aiResponse: "Excellent! Can you provide a practical example?",
-        evaluation: {
-          grammar: 92,
-          technical: 88,
-          depth: 82,
-          communication: 90,
-          feedback: "Strong understanding of closures",
-          strengths: ["Concise definition", "Good technical accuracy"],
-          areasToImprove: ["Could provide code example"],
-          recommendations: ["Practice with real-world closure examples"]
-        }
-      } as any,
-      {
-        sessionId: session1.id,
-        questionId: jsQuestions[2].id,
-        turnNumber: 2,
-        userAnswer: "The event loop continuously checks the call stack and task queue. When the stack is empty, it moves tasks from the queue to the stack.",
-        aiResponse: "Great answer! You clearly understand the event loop.",
-        evaluation: {
-          grammar: 95,
-          technical: 90,
-          depth: 88,
-          communication: 92,
-          feedback: "Excellent explanation of event loop mechanics",
-          strengths: ["Complete explanation", "Good technical depth"],
-          areasToImprove: ["Could mention microtasks vs macrotasks"],
-          recommendations: ["Explore Promise queue vs callback queue"]
-        }
-      } as any
-    ]);
-
-    await db.insert(scores).values({
-      sessionId: session1.id,
-      userId: sampleUser.id,
-      grammarScore: 92,
-      technicalScore: 88,
-      depthScore: 82,
-      communicationScore: 90,
-      totalScore: 88,
-      grade: "B",
-      detailedFeedback: {
-        strengths: ["Clear explanation", "Good understanding of scoping", "Concise definition"],
-        improvements: ["Could mention hoisting behavior", "Could provide code example"],
-        recommendations: ["Study variable hoisting in detail", "Practice with real-world closure examples"]
-      }
-    } as any);
-
-    // Session 2 - React (completed 2 days ago)
-    const [session2] = await db.insert(interviewSessions).values({
-      userId: sampleUser.id,
-      testId: reactTest.id,
-      status: "completed",
-      currentQuestionIndex: 2,
-      questionIds: reactQuestions.slice(0, 2).map(q => q.id),
-      startedAt: twoDaysAgo,
-      completedAt: new Date(twoDaysAgo.getTime() + 25 * 60 * 1000)
-    } as any).returning();
-
-    await db.insert(interviewTurns).values([
-      {
-        sessionId: session2.id,
-        questionId: reactQuestions[0].id,
-        turnNumber: 0,
-        userAnswer: "React hooks like useState and useEffect allow functional components to have state and lifecycle methods.",
-        aiResponse: "Good! Can you explain why hooks were introduced?",
-        evaluation: {
-          grammar: 88,
-          technical: 92,
-          depth: 85,
-          communication: 90,
-          feedback: "Strong grasp of hooks",
-          strengths: ["Clear explanation", "Mentioned key hooks"],
-          areasToImprove: ["Could discuss the motivation behind hooks"],
-          recommendations: ["Study hooks design philosophy"]
-        }
-      } as any,
-      {
-        sessionId: session2.id,
-        questionId: reactQuestions[1].id,
-        turnNumber: 1,
-        userAnswer: "The virtual DOM is a lightweight copy of the actual DOM. React uses it to efficiently update only the parts that changed.",
-        aiResponse: "Excellent understanding!",
-        evaluation: {
-          grammar: 90,
-          technical: 88,
-          depth: 80,
-          communication: 87,
-          feedback: "Good understanding of virtual DOM",
-          strengths: ["Correct explanation", "Mentioned efficiency"],
-          areasToImprove: ["Could explain the diffing algorithm"],
-          recommendations: ["Deep dive into reconciliation process"]
-        }
-      } as any
-    ]);
-
-    await db.insert(scores).values({
-      sessionId: session2.id,
-      userId: sampleUser.id,
-      grammarScore: 89,
-      technicalScore: 90,
-      depthScore: 83,
-      communicationScore: 89,
-      totalScore: 88,
-      grade: "B",
-      detailedFeedback: {
-        strengths: ["Clear explanation", "Mentioned key hooks", "Correct explanation"],
-        improvements: ["Could discuss the motivation behind hooks", "Could explain the diffing algorithm"],
-        recommendations: ["Study hooks design philosophy", "Deep dive into reconciliation process"]
-      }
-    } as any);
-
-    // Session 3 - JavaScript (excellent score, 3 days ago)
-    const [session3] = await db.insert(interviewSessions).values({
-      userId: sampleUser.id,
-      testId: jsTest.id,
-      status: "completed",
-      currentQuestionIndex: 2,
-      questionIds: jsQuestions.slice(0, 2).map(q => q.id),
-      startedAt: threeDaysAgo,
-      completedAt: new Date(threeDaysAgo.getTime() + 20 * 60 * 1000)
-    } as any).returning();
-
-    await db.insert(interviewTurns).values([
-      {
-        sessionId: session3.id,
-        questionId: jsQuestions[0].id,
-        turnNumber: 0,
-        userAnswer: "let and const are block-scoped variables introduced in ES6. var is function-scoped and hoisted to the top of its scope. const creates read-only references.",
-        aiResponse: "Perfect! Very comprehensive.",
-        evaluation: {
-          grammar: 95,
-          technical: 95,
-          depth: 92,
-          communication: 94,
-          feedback: "Outstanding understanding",
-          strengths: ["Complete explanation", "Mentioned ES6", "Professional terminology"],
-          areasToImprove: ["Already excellent"],
-          recommendations: ["Explore advanced ES6+ features"]
-        }
-      } as any,
-      {
-        sessionId: session3.id,
-        questionId: jsQuestions[1].id,
-        turnNumber: 1,
-        userAnswer: "Closures occur when an inner function has access to the outer function's variables. They're useful for data privacy, creating function factories, and managing state in callbacks.",
-        aiResponse: "Excellent! Perfect answer.",
-        evaluation: {
-          grammar: 96,
-          technical: 94,
-          depth: 90,
-          communication: 95,
-          feedback: "Excellent technical knowledge",
-          strengths: ["Comprehensive answer", "Multiple use cases", "Clear examples"],
-          areasToImprove: ["None"],
-          recommendations: ["Practice implementing design patterns"]
-        }
-      } as any
-    ]);
-
-    await db.insert(scores).values({
-      sessionId: session3.id,
-      userId: sampleUser.id,
-      grammarScore: 96,
-      technicalScore: 95,
-      depthScore: 91,
-      communicationScore: 95,
-      totalScore: 94,
-      grade: "A",
-      detailedFeedback: {
-        strengths: ["Complete explanation", "Mentioned ES6", "Professional terminology", "Comprehensive answer", "Multiple use cases"],
-        improvements: ["Already excellent"],
-        recommendations: ["Explore advanced ES6+ features", "Practice implementing design patterns"]
-      }
-    } as any);
-
-    console.log("✅ Created 3 completed interview sessions with scores");
+    console.log("✅ Created Java and Python tests");
 
     console.log(`
 🎉 Seeding completed successfully!
 
-📝 Test Credentials:
-   Admin: admin / admin123
-   User:  testuser / user123
+📝 Admin Credentials:
+   Username: admin
+   Password: admin123
+   Email: admin@srishakthi.ac.in
+
+📝 Student Credentials:
+   Total Students: ${studentUsers.length}
+   All students have the same password: Siet@123
+   Example logins:
+   - ramalingamm22ece / Siet@123
+   - gowthamg22cys / Siet@123
+   - kesavans22cys / Siet@123
+   (Username is the part before @ in email)
 
 📊 Sample Data Created:
-   - 3 completed interview sessions for testuser
-   - Scores: A (94%), B (88%), B (88%)
-   - Topics: JavaScript, React, System Design
+   - ${allJavaQuestions.length} Java questions
+   - ${allPythonQuestions.length} Python questions
+   - 2 active tests (Java and Python)
 
 🚀 You can now log in and start using the application!
     `);
