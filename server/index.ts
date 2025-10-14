@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { autoSeedIfEmpty } from "./auto-seed";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Auto-seed database if empty
+  await autoSeedIfEmpty();
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -58,11 +62,16 @@ app.use((req, res, next) => {
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
+  // Other ports are firewalled. Default to 5173 if not specified.
   // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen(port, () => {
-    log(`serving on port ${port}`);
+  // Bind to 0.0.0.0 to make it accessible from other machines
+  const port = parseInt(process.env.PORT || '5173', 10);
+  const host = process.env.HOST || '0.0.0.0';
+  
+  server.listen(port, host, () => {
+    log(`serving on ${host}:${port}`);
+    if (host === '0.0.0.0') {
+      log(`accessible at http://localhost:${port} or http://[your-ip]:${port}`);
+    }
   });
 })();
