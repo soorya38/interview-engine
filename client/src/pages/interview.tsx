@@ -17,10 +17,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SendHorizontal, Loader2, X, Mic, MicOff, Square } from "lucide-react";
+import { SendHorizontal, Loader2, X, Mic, MicOff, Square, Volume2, VolumeX } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import type { InterviewSession, InterviewTurn } from "@shared/schema";
 
 export default function Interview() {
@@ -77,6 +78,25 @@ export default function Interview() {
     silenceTimeout: 4000
   });
 
+  // Text-to-speech functionality
+  const {
+    speak,
+    stop: stopSpeaking,
+    isSpeaking,
+    isLoading: isTTSLoading,
+    error: ttsError,
+  } = useTextToSpeech({
+    apiKey: 'AIzaSyAdEZvuLkTF0wQ914dwFGJZAhB46sb_Ca4',
+    language: 'en-US',
+    voiceName: 'en-US-Neural2-F',
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Text-to-Speech Error",
+        description: error,
+      });
+    },
+  });
 
   const { data: session, isLoading } = useQuery<InterviewSession & {
     currentQuestion?: { questionText: string };
@@ -96,6 +116,19 @@ export default function Interview() {
       return 1000;
     },
   });
+
+  // Auto-read question when it changes
+  useEffect(() => {
+    if (session?.currentQuestion?.questionText) {
+      // Read the question automatically
+      speak(session.currentQuestion.questionText);
+    }
+    
+    // Cleanup: stop speaking when component unmounts or question changes
+    return () => {
+      stopSpeaking();
+    };
+  }, [session?.currentQuestion?.questionText]);
 
   const submitAnswerMutation = useMutation({
     mutationFn: async (userAnswer: string) => {
@@ -262,9 +295,41 @@ export default function Interview() {
         <Card className="p-8">
           <div className="space-y-6">
             <div>
-              <h2 className="text-sm font-medium text-muted-foreground mb-2">
-                Interview Question
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-medium text-muted-foreground">
+                  Interview Question
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (isSpeaking) {
+                      stopSpeaking();
+                    } else if (session.currentQuestion?.questionText) {
+                      speak(session.currentQuestion.questionText);
+                    }
+                  }}
+                  disabled={isTTSLoading || !session.currentQuestion?.questionText}
+                  className="flex items-center gap-2"
+                >
+                  {isTTSLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : isSpeaking ? (
+                    <>
+                      <VolumeX className="h-4 w-4" />
+                      Stop Reading
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-4 w-4" />
+                      Read Question
+                    </>
+                  )}
+                </Button>
+              </div>
               <p className="text-2xl font-medium leading-relaxed" data-testid="text-question">
                 {session.currentQuestion?.questionText || "Loading question..."}
               </p>
