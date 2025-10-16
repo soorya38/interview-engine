@@ -29,12 +29,47 @@ export default function Interview() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [answer, setAnswer] = useState("");
+  const [isManualEdit, setIsManualEdit] = useState(false);
+  const [editCountdown, setEditCountdown] = useState(0);
+  const [editTimeoutId, setEditTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const answerRef = useRef(answer);
   
   // Update ref when answer changes
   useEffect(() => {
     answerRef.current = answer;
   }, [answer]);
+
+  // Speech countdown timer removed - auto-submit immediately after speech
+
+  // Countdown timer for manual edits (DISABLED - no auto-submit in manual mode)
+  // When user clicks textarea, they want full manual control
+  // useEffect(() => {
+  //   if (editCountdown > 0 && !isTyping) {
+  //     const timer = setTimeout(() => {
+  //       setEditCountdown(editCountdown - 1);
+  //     }, 1000);
+  //     return () => clearTimeout(timer);
+  //   } else if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
+  //     // Auto-submit when countdown reaches 0 and user is not typing
+  //     console.log("Edit countdown finished, auto-submitting answer");
+  //     // We'll handle the submission in a separate effect after submitAnswerMutation is defined
+  //     setIsManualEdit(false);
+  //   }
+  // }, [editCountdown, isManualEdit, answer, isTyping]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (editTimeoutId) {
+        clearTimeout(editTimeoutId);
+      }
+      if (typingTimeoutId) {
+        clearTimeout(typingTimeoutId);
+      }
+    };
+  }, [editTimeoutId, typingTimeoutId]);
 
   // Speech-to-text functionality
   const {
@@ -65,10 +100,11 @@ export default function Interview() {
       
       // Check if transcript has more than 1 character
       if (transcript.trim().length > 1) {
-        console.log("Auto-submitting answer with transcript:", transcript);
+        console.log("Setting answer from speech recognition:", transcript);
         // Set the answer to the full transcript from speech recognition
         setAnswer(transcript);
-        // Submit directly with the transcript instead of relying on state
+        // Auto-submit immediately after speech recognition
+        console.log("Answer set from speech. Auto-submitting immediately.");
         submitAnswerMutation.mutate(transcript);
       } else {
         console.log("Auto-submit skipped - Transcript too short (length:", transcript.trim().length, ")");
@@ -186,6 +222,17 @@ export default function Interview() {
     },
   });
 
+  // Speech countdown auto-submission removed - auto-submit immediately after speech
+
+  // Handle auto-submission when edit countdown reaches 0
+  // DISABLED: When user clicks textarea, they want full manual control
+  // useEffect(() => {
+  //   if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
+  //     console.log("Auto-submitting answer after edit countdown");
+  //     submitAnswerMutation.mutate(answer);
+  //   }
+  // }, [editCountdown, isManualEdit, answer, submitAnswerMutation, isTyping]);
+
   const handleSubmit = async () => {
     await enableAudio(); // Enable audio on user interaction
     if (!answer.trim()) {
@@ -196,7 +243,41 @@ export default function Interview() {
       });
       return;
     }
+    // Reset all states when manually submitting
+    setIsManualEdit(false);
+    setEditCountdown(0);
     submitAnswerMutation.mutate(answer);
+  };
+
+  const handleManualEdit = () => {
+    setIsManualEdit(true);
+    setEditCountdown(0); // Stop the timer completely
+    setIsTyping(false); // Reset typing state
+    console.log("User clicked textarea, stopping all timers and canceling auto-submission");
+  };
+
+  const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newAnswer = e.target.value;
+    setAnswer(newAnswer);
+    
+    // Set typing state to true
+    setIsTyping(true);
+    
+    // Clear existing typing timeout
+    if (typingTimeoutId) {
+      clearTimeout(typingTimeoutId);
+    }
+    
+    // Set new timeout to detect when user stops typing (2 seconds)
+    const newTimeoutId = setTimeout(() => {
+      setIsTyping(false);
+      console.log("User stopped typing");
+    }, 2000);
+    
+    setTypingTimeoutId(newTimeoutId);
+    
+    // Don't reset countdown in manual edit mode - timer is stopped
+    // User has full control when they click the textarea
   };
 
   const handleStartListening = async () => {
@@ -382,24 +463,36 @@ export default function Interview() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Your Answer</label>
-                {isListening && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="font-medium">Listening...</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  {isListening && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="font-medium">Listening...</span>
+                    </div>
+                  )}
+                  {isManualEdit && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-semibold">Manual edit mode - Click Submit when ready</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <Textarea
                 value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
+                onChange={handleAnswerChange}
+                onFocus={handleManualEdit}
                 placeholder="Type your answer here or use voice input..."
                 className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${
                   isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
+                } ${
+                  isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
                 }`}
                 disabled={submitAnswerMutation.isPending}
                 data-testid="textarea-answer"
               />
             </div>
+
 
             {/* Speech-to-Text Controls */}
             <div className="space-y-3">
