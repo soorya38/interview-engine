@@ -85,6 +85,8 @@ export default function Interview() {
     isSpeaking,
     isLoading: isTTSLoading,
     error: ttsError,
+    hasUserInteracted,
+    enableAudio,
   } = useTextToSpeech({
     apiKey: 'AIzaSyAdEZvuLkTF0wQ914dwFGJZAhB46sb_Ca4',
     language: 'en-US',
@@ -120,7 +122,8 @@ export default function Interview() {
   // Auto-read question when it changes
   useEffect(() => {
     if (session?.currentQuestion?.questionText) {
-      // Read the question automatically
+      // Always try to read the question automatically
+      // The speak function will handle user interaction requirements
       speak(session.currentQuestion.questionText);
     }
     
@@ -176,7 +179,8 @@ export default function Interview() {
     },
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    await enableAudio(); // Enable audio on user interaction
     if (!answer.trim()) {
       toast({
         variant: "destructive",
@@ -188,10 +192,12 @@ export default function Interview() {
     submitAnswerMutation.mutate(answer);
   };
 
-  const handleStartListening = () => {
+  const handleStartListening = async () => {
     console.log("handleStartListening called");
     console.log("isSupported:", isSupported);
     console.log("isListening:", isListening);
+    
+    await enableAudio(); // Enable audio on user interaction
     
     if (!isSupported) {
       console.log("Speech recognition not supported");
@@ -302,7 +308,8 @@ export default function Interview() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
+                    await enableAudio(); // Enable audio on user interaction
                     if (isSpeaking) {
                       stopSpeaking();
                     } else if (session.currentQuestion?.questionText) {
@@ -333,6 +340,13 @@ export default function Interview() {
               <p className="text-2xl font-medium leading-relaxed" data-testid="text-question">
                 {session.currentQuestion?.questionText || "Loading question..."}
               </p>
+              {!hasUserInteracted && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    💡 <strong>Tip:</strong> Click any button to enable audio playback. Questions will then play automatically.
+                  </p>
+                </div>
+              )}
             </div>
 
             {session.turns && session.turns.length > 0 && (

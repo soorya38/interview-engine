@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface TextToSpeechOptions {
   apiKey: string;
@@ -15,6 +15,8 @@ interface TextToSpeechReturn {
   isSpeaking: boolean;
   isLoading: boolean;
   error: string | null;
+  hasUserInteracted: boolean;
+  enableAudio: () => void;
 }
 
 export function useTextToSpeech({
@@ -28,7 +30,10 @@ export function useTextToSpeech({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [audioContextInitialized, setAudioContextInitialized] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -39,6 +44,53 @@ export function useTextToSpeech({
     setIsSpeaking(false);
   }, []);
 
+  const initializeAudioContext = useCallback(async () => {
+    if (audioContextInitialized) return;
+    
+    try {
+      // Create and resume audio context to enable audio playback
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
+      setAudioContextInitialized(true);
+      setHasUserInteracted(true);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to initialize audio context:', err);
+    }
+  }, [audioContextInitialized]);
+
+  // Initialize audio context on component mount to enable auto-play
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        // Try to create a silent audio context to unlock auto-play
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = audioContext;
+        
+        // Create a silent audio buffer and play it to unlock audio
+        const buffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start();
+        
+        setAudioContextInitialized(true);
+        setHasUserInteracted(true);
+        setError(null);
+      } catch (err) {
+        // If auto-initialization fails, that's okay - user will need to interact
+        console.log('Auto-audio initialization failed, will require user interaction');
+      }
+    };
+    
+    initAudio();
+  }, []);
+
   const speak = useCallback(async (text: string) => {
     if (!text.trim()) {
       return;
@@ -46,6 +98,11 @@ export function useTextToSpeech({
 
     // Stop any currently playing audio
     stop();
+
+    // If audio context is not initialized, try to initialize it
+    if (!audioContextInitialized) {
+      await initializeAudioContext();
+    }
 
     setIsLoading(true);
     setError(null);
@@ -92,6 +149,7 @@ export function useTextToSpeech({
       audio.onplay = () => {
         setIsSpeaking(true);
         setIsLoading(false);
+        setHasUserInteracted(true);
         onStart?.();
       };
 
@@ -112,7 +170,23 @@ export function useTextToSpeech({
         audioRef.current = null;
       };
 
-      await audio.play();
+      try {
+        await audio.play();
+      } catch (playError) {
+        // Handle browser autoplay policy - audio requires user interaction
+        if (playError instanceof Error && playError.name === 'NotAllowedError') {
+          const errorMsg = 'Audio playback requires user interaction. Please click the "Read Question" button to enable audio.';
+          setError(errorMsg);
+          setIsLoading(false);
+          setIsSpeaking(false);
+          onError?.(errorMsg);
+          URL.revokeObjectURL(audioUrl);
+          audioRef.current = null;
+          return;
+        }
+        // Re-throw other errors
+        throw playError;
+      }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to generate speech';
       setError(errorMsg);
@@ -120,7 +194,11 @@ export function useTextToSpeech({
       setIsSpeaking(false);
       onError?.(errorMsg);
     }
-  }, [apiKey, language, voiceName, stop, onError, onStart, onEnd]);
+  }, [apiKey, language, voiceName, stop, onError, onStart, onEnd, audioContextInitialized, initializeAudioContext]);
+
+  const enableAudio = useCallback(async () => {
+    await initializeAudioContext();
+  }, [initializeAudioContext]);
 
   return {
     speak,
@@ -128,6 +206,8 @@ export function useTextToSpeech({
     isSpeaking,
     isLoading,
     error,
+    hasUserInteracted,
+    enableAudio,
   };
 }
 
