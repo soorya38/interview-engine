@@ -98,6 +98,13 @@ export default function Interview() {
         description: error,
       });
     },
+    onEnd: () => {
+      // Automatically start microphone after question is read
+      if (isSupported && !isListening) {
+        console.log("Question finished reading, starting microphone automatically");
+        handleStartListening();
+      }
+    },
   });
 
   const { data: session, isLoading } = useQuery<InterviewSession & {
