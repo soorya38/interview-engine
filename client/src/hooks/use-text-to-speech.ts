@@ -175,11 +175,11 @@ export function useTextToSpeech({
       } catch (playError) {
         // Handle browser autoplay policy - audio requires user interaction
         if (playError instanceof Error && playError.name === 'NotAllowedError') {
-          const errorMsg = 'Audio playback requires user interaction. Please click the "Read Question" button to enable audio.';
-          setError(errorMsg);
+          // Don't show error message, just silently fail and let user interact
+          console.log('Audio blocked by browser, will work after user interaction');
+          setError(null);
           setIsLoading(false);
           setIsSpeaking(false);
-          onError?.(errorMsg);
           URL.revokeObjectURL(audioUrl);
           audioRef.current = null;
           return;

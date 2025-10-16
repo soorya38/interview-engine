@@ -340,13 +340,6 @@ export default function Interview() {
               <p className="text-2xl font-medium leading-relaxed" data-testid="text-question">
                 {session.currentQuestion?.questionText || "Loading question..."}
               </p>
-              {!hasUserInteracted && (
-                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    💡 <strong>Tip:</strong> Click any button to enable audio playback. Questions will then play automatically.
-                  </p>
-                </div>
-              )}
             </div>
 
             {session.turns && session.turns.length > 0 && (
