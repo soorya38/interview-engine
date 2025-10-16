@@ -43,10 +43,10 @@ export default function Interview() {
 
   // Speech countdown timer removed - auto-submit immediately after speech
 
-  // Countdown timer for manual edits (DISABLED - no auto-submit in manual mode)
-  // When user clicks textarea, they want full manual control
+  // Countdown timer for manual edits (DISABLED - no timer in manual edit mode)
+  // When user clicks textarea, they want full manual control without timer pressure
   // useEffect(() => {
-  //   if (editCountdown > 0 && !isTyping) {
+  //   if (editCountdown > 0 && !isTyping && isManualEdit) {
   //     const timer = setTimeout(() => {
   //       setEditCountdown(editCountdown - 1);
   //     }, 1000);
@@ -54,7 +54,6 @@ export default function Interview() {
   //   } else if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
   //     // Auto-submit when countdown reaches 0 and user is not typing
   //     console.log("Edit countdown finished, auto-submitting answer");
-  //     // We'll handle the submission in a separate effect after submitAnswerMutation is defined
   //     setIsManualEdit(false);
   //   }
   // }, [editCountdown, isManualEdit, answer, isTyping]);
@@ -97,6 +96,14 @@ export default function Interview() {
       console.log("Auto-submit triggered with transcript:", transcript);
       console.log("Current answer ref:", answerRef.current);
       console.log("Answer ref length:", answerRef.current.length);
+      console.log("Is manual edit mode:", isManualEdit);
+      console.log("Is typing:", isTyping);
+      
+      // Don't auto-submit if user is in manual edit mode or currently typing
+      if (isManualEdit || isTyping) {
+        console.log("Auto-submit cancelled - User is in manual edit mode or typing");
+        return;
+      }
       
       // Check if transcript has more than 1 character
       if (transcript.trim().length > 1) {
@@ -224,8 +231,7 @@ export default function Interview() {
 
   // Speech countdown auto-submission removed - auto-submit immediately after speech
 
-  // Handle auto-submission when edit countdown reaches 0
-  // DISABLED: When user clicks textarea, they want full manual control
+  // Handle auto-submission when edit countdown reaches 0 (DISABLED - no auto-submit in manual mode)
   // useEffect(() => {
   //   if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
   //     console.log("Auto-submitting answer after edit countdown");
@@ -251,14 +257,33 @@ export default function Interview() {
 
   const handleManualEdit = () => {
     setIsManualEdit(true);
-    setEditCountdown(0); // Stop the timer completely
+    setEditCountdown(0); // No countdown timer in manual edit mode
     setIsTyping(false); // Reset typing state
-    console.log("User clicked textarea, stopping all timers and canceling auto-submission");
+    
+    // Stop speech recognition when user enters manual edit mode
+    if (isListening) {
+      console.log("Stopping speech recognition due to manual edit");
+      handleStopListening();
+    }
+    
+    console.log("User clicked textarea, entering manual edit mode (no timer)");
   };
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newAnswer = e.target.value;
     setAnswer(newAnswer);
+    
+    // Enter manual edit mode when user starts typing
+    if (!isManualEdit) {
+      setIsManualEdit(true);
+      console.log("User started typing, entering manual edit mode");
+      
+      // Stop speech recognition when user starts typing
+      if (isListening) {
+        console.log("Stopping speech recognition due to typing");
+        handleStopListening();
+      }
+    }
     
     // Set typing state to true
     setIsTyping(true);
@@ -275,9 +300,6 @@ export default function Interview() {
     }, 2000);
     
     setTypingTimeoutId(newTimeoutId);
-    
-    // Don't reset countdown in manual edit mode - timer is stopped
-    // User has full control when they click the textarea
   };
 
   const handleStartListening = async () => {
@@ -462,7 +484,7 @@ export default function Interview() {
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Your Answer</label>
+                <label className="text-sm font-medium">Your Answer (Click to edit)</label>
                 <div className="flex items-center gap-3">
                   {isListening && (
                     <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
