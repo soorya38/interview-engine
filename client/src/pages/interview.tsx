@@ -380,12 +380,22 @@ export default function Interview() {
         <Card className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Your Answer</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Your Answer</label>
+                {isListening && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="font-medium">Listening...</span>
+                  </div>
+                )}
+              </div>
               <Textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Type your answer here or use voice input..."
-                className="min-h-[200px] resize-none"
+                className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${
+                  isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
+                }`}
                 disabled={submitAnswerMutation.isPending}
                 data-testid="textarea-answer"
               />
@@ -418,11 +428,13 @@ export default function Interview() {
                 {isListening && (
                   <div className="flex items-center gap-2 text-sm">
                     {countdown > 0 ? (
-                      <span className="text-orange-600 font-medium animate-pulse">
+                      <span className="text-orange-600 dark:text-orange-400 font-semibold animate-pulse bg-orange-50 dark:bg-orange-950/20 px-3 py-1 rounded-full border border-orange-200 dark:border-orange-800">
                         ⏰ Auto-submitting in {countdown}s... Speak to cancel
                       </span>
                     ) : (
-                      <span className="text-green-600">🎤 Listening... Speak now</span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-950/20 px-3 py-1 rounded-full border border-green-200 dark:border-green-800">
+                        🎤 Listening... Speak now
+                      </span>
                     )}
                   </div>
                 )}
@@ -443,8 +455,9 @@ export default function Interview() {
 
               {/* Interim transcript display */}
               {interimTranscript && (
-                <div className="text-sm text-gray-600 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  <span className="font-medium">Live transcript:</span> {interimTranscript}
+                <div className="text-base text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+                  <span className="font-semibold">🎤 Live transcript:</span> 
+                  <span className="ml-2 font-medium">{interimTranscript}</span>
                 </div>
               )}
             </div>
