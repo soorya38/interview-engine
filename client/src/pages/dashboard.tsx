@@ -47,7 +47,7 @@ export default function Dashboard() {
           Welcome back, {user?.username}!
         </h1>
         <p className="text-muted-foreground">
-          Continue your interview practice journey
+          Continue your learning journey
         </p>
       </div>
 
@@ -62,7 +62,7 @@ export default function Dashboard() {
               {stats?.totalTests || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Interviews completed
+              Tests completed
             </p>
           </CardContent>
         </Card>
@@ -102,7 +102,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Start a new interview session</CardDescription>
+            <CardDescription>Start a new test session</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
@@ -122,7 +122,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Tests</CardTitle>
-            <CardDescription>Your latest interview sessions</CardDescription>
+            <CardDescription>Your latest test sessions</CardDescription>
           </CardHeader>
           <CardContent>
             {recentSessions && recentSessions.length > 0 ? (
@@ -138,7 +138,7 @@ export default function Dashboard() {
                           <BookOpen className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{session.topicName || "Interview"}</p>
+                          <p className="font-medium text-sm">{session.topicName || "Test"}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             {new Date(session.startedAt).toLocaleDateString()}
@@ -162,7 +162,7 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No tests completed yet</p>
-                <p className="text-sm mt-1">Start your first interview to see results here</p>
+                <p className="text-sm mt-1">Start your first test to see results here</p>
               </div>
             )}
           </CardContent>

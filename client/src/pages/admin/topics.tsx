@@ -181,7 +181,7 @@ export default function AdminTests() {
             Manage Tests
           </h1>
           <p className="text-muted-foreground">
-            Create and manage interview tests
+            Create and manage educational tests
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -195,7 +195,7 @@ export default function AdminTests() {
             <DialogHeader>
               <DialogTitle>{editingTest ? "Edit Test" : "Add New Test"}</DialogTitle>
               <DialogDescription>
-                {editingTest ? "Update test information" : "Create a new interview test"}
+                {editingTest ? "Update test information" : "Create a new educational test"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -375,7 +375,7 @@ export default function AdminTests() {
           <div className="text-center text-muted-foreground">
             <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg mb-2">No tests yet</p>
-            <p className="text-sm">Click "Add Test" to create your first interview test</p>
+            <p className="text-sm">Click "Add Test" to create your first educational test</p>
           </div>
         </Card>
       )}

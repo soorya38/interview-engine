@@ -3,16 +3,13 @@ import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Hardcoded database connection string
+const DATABASE_URL = "postgresql://test_user:c335ex57pfp5WKNWqqaefl8MBLwD88OC@dpg-d43hvv3ipnbc73bu7pk0-a.singapore-postgres.render.com:5432/test_db_s8pm";
 
 // Use standard PostgreSQL driver for local development
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 export const db = drizzle({ client: pool, schema });

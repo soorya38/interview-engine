@@ -67,11 +67,11 @@ export function AppSidebar() {
       url: "/admin/users",
       icon: Users,
     },
-    {
-      title: "Analytics",
-      url: "/admin/analytics",
-      icon: BarChart3,
-    },
+    // {
+    //   title: "Analytics",
+    //   url: "/admin/analytics",
+    //   icon: BarChart3,
+    // },
   ];
 
   const items = user?.role === "admin" || user?.role === "instructor" ? adminItems : userItems;
@@ -90,7 +90,7 @@ export function AppSidebar() {
           </div>
           <div>
             <h2 className="font-semibold text-sidebar-foreground">AI MockMate</h2>
-            <p className="text-xs text-muted-foreground">Interview Practice</p>
+            <p className="text-xs text-muted-foreground">Education Practice</p>
           </div>
         </div>
       </SidebarHeader>

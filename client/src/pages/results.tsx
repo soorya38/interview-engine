@@ -66,7 +66,7 @@ export default function Results() {
         <div className={`text-7xl font-bold ${getGradeColor(score.grade || 'F')}`} data-testid="text-grade">
           {score.grade}
         </div>
-        <h1 className="text-3xl font-semibold">Interview Complete!</h1>
+        <h1 className="text-3xl font-semibold">Test Complete!</h1>
         <p className="text-muted-foreground">
           Here's your performance breakdown
         </p>

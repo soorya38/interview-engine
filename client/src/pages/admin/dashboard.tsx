@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               {stats?.totalTopics || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Interview categories
+              Test categories
             </p>
           </CardContent>
         </Card>
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
               {stats?.totalSessions || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Interviews conducted
+              Tests conducted
             </p>
           </CardContent>
         </Card>
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
                 <BookOpen className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Manage Topics</p>
-                  <p className="text-sm text-muted-foreground">Add or edit interview topics</p>
+                  <p className="text-sm text-muted-foreground">Add or edit test topics</p>
                 </div>
               </div>
             </a>

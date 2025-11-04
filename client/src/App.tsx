@@ -179,7 +179,7 @@ function AppLayout() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <AuthProvider>
           <TooltipProvider>
             <AppLayout />

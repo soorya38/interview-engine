@@ -83,7 +83,10 @@ export default function Interview() {
     countdown
   } = useSpeechToText({
     onResult: (text) => {
-      setAnswer(prev => prev + text);
+      // Update the answer with the current speech result
+      // This will show what's being said in the textarea
+      setAnswer(text);
+      console.log("Speech result received:", text);
     },
     onError: (error) => {
       toast({
@@ -107,11 +110,8 @@ export default function Interview() {
       
       // Check if transcript has more than 1 character
       if (transcript.trim().length > 1) {
-        console.log("Setting answer from speech recognition:", transcript);
-        // Set the answer to the full transcript from speech recognition
-        setAnswer(transcript);
-        // Auto-submit immediately after speech recognition
-        console.log("Answer set from speech. Auto-submitting immediately.");
+        console.log("Auto-submitting speech transcript:", transcript);
+        // Auto-submit the transcript directly
         submitAnswerMutation.mutate(transcript);
       } else {
         console.log("Auto-submit skipped - Transcript too short (length:", transcript.trim().length, ")");
@@ -319,6 +319,10 @@ export default function Interview() {
       return;
     }
     
+    // Clear the answer field when starting new speech session
+    setAnswer("");
+    setIsManualEdit(false);
+    
     console.log("Starting speech recognition...");
     startListening();
   };
@@ -413,7 +417,7 @@ export default function Interview() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-medium text-muted-foreground">
-                  Interview Question
+                  Practice Question
                 </h2>
                 <Button
                   variant="ghost"
@@ -452,31 +456,6 @@ export default function Interview() {
               </p>
             </div>
 
-            {session.turns && session.turns.length > 0 && (
-              <div className="pt-6 border-t border-border space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    Your Answer
-                  </h3>
-                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-                    <p className="text-sm leading-relaxed" data-testid="text-user-answer">
-                      {session.turns[session.turns.length - 1]?.userAnswer}
-                    </p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    AI Feedback
-                  </h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm leading-relaxed" data-testid="text-ai-response">
-                      {session.turns[session.turns.length - 1]?.aiResponse}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </Card>
 

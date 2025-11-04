@@ -108,7 +108,7 @@ export default function Login() {
             </div>
             <div>
               <CardTitle className="text-2xl">AI MockMate</CardTitle>
-              <CardDescription>AI-Powered Interview Practice</CardDescription>
+              <CardDescription>AI-Powered Education Practice</CardDescription>
             </div>
           </div>
           <CardDescription className="pt-2">

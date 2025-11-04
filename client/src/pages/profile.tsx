@@ -338,11 +338,11 @@ export default function Profile() {
                 <Award className="h-5 w-5" />
                 Performance Stats
               </CardTitle>
-              <CardDescription>Your interview performance overview</CardDescription>
+              <CardDescription>Your test performance overview</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total Interviews</span>
+                <span className="text-sm text-muted-foreground">Total Tests</span>
                 <span className="text-2xl font-bold" data-testid="stat-total-interviews">
                   {stats?.totalTests || 0}
                 </span>
@@ -373,7 +373,7 @@ export default function Profile() {
                 <Calendar className="h-5 w-5" />
                 Recent Activity
               </CardTitle>
-              <CardDescription>Your latest interview sessions</CardDescription>
+              <CardDescription>Your latest test sessions</CardDescription>
             </CardHeader>
             <CardContent>
               {stats?.recentScores && stats.recentScores.length > 0 ? (
@@ -401,7 +401,7 @@ export default function Profile() {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No activity yet</p>
-                  <p className="text-sm mt-1">Start an interview to see your progress</p>
+                  <p className="text-sm mt-1">Start a test to see your progress</p>
                 </div>
               )}
             </CardContent>

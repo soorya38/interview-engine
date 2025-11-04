@@ -190,7 +190,7 @@ export default function AdminQuestions() {
             Manage Questions
           </h1>
           <p className="text-muted-foreground">
-            Build your interview question bank
+            Build your question bank
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -204,7 +204,7 @@ export default function AdminQuestions() {
             <DialogHeader>
               <DialogTitle>{editingQuestion ? "Edit Question" : "Add New Question"}</DialogTitle>
               <DialogDescription>
-                {editingQuestion ? "Update question details" : "Create a new interview question"}
+                {editingQuestion ? "Update question details" : "Create a new question"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -241,7 +241,7 @@ export default function AdminQuestions() {
                       <FormLabel>Question</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Enter the interview question..."
+                          placeholder="Enter the question..."
                           className="min-h-[100px]"
                           {...field}
                           data-testid="textarea-question"

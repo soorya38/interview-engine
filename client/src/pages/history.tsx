@@ -29,8 +29,8 @@ export default function History() {
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-4xl font-semibold text-foreground mb-2">Interview History</h1>
-        <p className="text-muted-foreground">View all your completed interview sessions</p>
+        <h1 className="text-4xl font-semibold text-foreground mb-2">Test History</h1>
+        <p className="text-muted-foreground">View all your completed test sessions</p>
       </div>
 
       {sessions && sessions.length > 0 ? (
@@ -44,7 +44,7 @@ export default function History() {
                       <BookOpen className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{session.topicName || "Interview"}</h3>
+                      <h3 className="font-semibold text-lg mb-1">{session.topicName || "Test"}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -100,11 +100,11 @@ export default function History() {
           <CardContent className="py-16">
             <div className="text-center text-muted-foreground">
               <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">No interview history</p>
-              <p className="text-sm">Complete your first interview to see your history here</p>
+              <p className="text-lg font-medium mb-2">No test history</p>
+              <p className="text-sm">Complete your first test to see your history here</p>
               <Link href="/tests">
                 <Button className="mt-4">
-                  Start New Interview
+                  Start New Test
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </Link>

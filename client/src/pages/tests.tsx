@@ -31,7 +31,7 @@ export default function Tests() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Failed to start interview",
+        title: "Failed to start test",
         description: error.message || "Please try again",
       });
     },
@@ -63,7 +63,7 @@ export default function Tests() {
           Available Tests
         </h1>
         <p className="text-muted-foreground">
-          Choose a test to start your mock interview
+          Choose a test to start your educational practice
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default function Tests() {
                 </div>
                 <CardTitle className="text-xl">{test.name}</CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {test.description || "Practice interview questions on this test"}
+                  {test.description || "Practice questions on this educational test"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -109,7 +109,7 @@ export default function Tests() {
                   data-testid={`button-start-${test.id}`}
                 >
                   <PlayCircle className="h-4 w-4 mr-2" />
-                  {startInterviewMutation.isPending ? "Starting..." : "Start Interview"}
+                  {startInterviewMutation.isPending ? "Starting..." : "Start Test"}
                 </Button>
               </CardContent>
             </Card>
@@ -121,7 +121,7 @@ export default function Tests() {
             <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg mb-2">No tests found</p>
             <p className="text-sm">
-              {searchQuery ? "Try a different search term" : "No interview tests available yet"}
+              {searchQuery ? "Try a different search term" : "No educational tests available yet"}
             </p>
           </div>
         </Card>

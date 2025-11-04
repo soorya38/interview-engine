@@ -89,7 +89,7 @@ export default function Register() {
             </div>
           </div>
           <CardDescription className="pt-2">
-            Start practicing interviews with AI feedback
+            Start practicing with AI feedback
           </CardDescription>
         </CardHeader>
         <CardContent>
