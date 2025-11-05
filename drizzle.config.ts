@@ -1,7 +1,9 @@
 import { defineConfig } from "drizzle-kit";
 
-// Hardcoded database connection string
-const DATABASE_URL = "postgresql://test_user:c335ex57pfp5WKNWqqaefl8MBLwD88OC@dpg-d43hvv3ipnbc73bu7pk0-a.singapore-postgres.render.com:5432/test_db_s8pm";
+// Get database URL from environment variable, default to local PostgreSQL
+// Default assumes postgres user with no password (trust authentication on localhost)
+// For production or custom setup, set DATABASE_URL in .env file
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres@localhost:5432/mockmate_dev";
 
 export default defineConfig({
   out: "./migrations",

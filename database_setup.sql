@@ -110,177 +110,192 @@ CREATE TABLE "scores" (
 -- Insert users using CTEs to get the admin user ID
 WITH admin_user AS (
 	INSERT INTO "users" ("username", "password", "role", "full_name", "email")
-	VALUES ('admin', '$2b$10$tqM5pBOBIo/XcGkEtxkr2uKxPLhclVx9Zjv/oabf7p39JuWOfb82q', 'admin', 'Admin User', 'admin@gmail.com')
+	VALUES ('admin', '$2b$10$DSdZrtEKpI9AweIScrOrduarzGNlfzgfmmtAVb2tNigHNN93mulUy', 'admin', 'Admin User', 'admin@srishakthi.ac.in')
 	RETURNING "id"
 ),
 student_users AS (
 	INSERT INTO "users" ("username", "password", "role", "full_name", "email")
 	VALUES 
-		('soorya', '$2b$10$b5EONX3FeiiGE6/qXVi5y.xJTCZbBNcvTPTTnPiH4R713CZ1rn9ju', 'user', 'Soorya', 'soorya@gmail.com'),
-		('sharvesh', '$2b$10$b5EONX3FeiiGE6/qXVi5y.xJTCZbBNcvTPTTnPiH4R713CZ1rn9ju', 'user', 'Sharvesh', 'sharvesh@gmail.com'),
-		('sudhir', '$2b$10$b5EONX3FeiiGE6/qXVi5y.xJTCZbBNcvTPTTnPiH4R713CZ1rn9ju', 'user', 'Sudhir', 'sudhir@gmail.com'),
-		('vishwanathan', '$2b$10$b5EONX3FeiiGE6/qXVi5y.xJTCZbBNcvTPTTnPiH4R713CZ1rn9ju', 'user', 'Vishwanathan', 'vishwanathan@gmail.com')
+		('ramalingamm22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ramalingamm Ece', 'ramalingamm22ece@srishakthi.ac.in'),
+		('gowthamg22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Gowthamg Cys', 'gowthamg22cys@srishakthi.ac.in'),
+		('kesavans22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Kesavans Cys', 'kesavans22cys@srishakthi.ac.in'),
+		('noorafikjalaludeena22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Noorafikjalaludeena Ads', 'noorafikjalaludeena22ads@srishakthi.ac.in'),
+		('rishir22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Rishir Ads', 'rishir22ads@srishakthi.ac.in'),
+		('sivraamkrishnankv22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sivraamkrishnankv Ads', 'sivraamkrishnankv22ads@srishakthi.ac.in'),
+		('varuns22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Varuns Ads', 'varuns22ads@srishakthi.ac.in'),
+		('deepakt22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Deepakt Aml', 'deepakt22aml@srishakthi.ac.in'),
+		('prakashdassr22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Prakashdassr Aml', 'prakashdassr22aml@srishakthi.ac.in'),
+		('abdulgousea22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Abdulgousea It', 'abdulgousea22it@srishakthi.ac.in'),
+		('ancyjemigoldbellp22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ancyjemigoldbellp Cse', 'ancyjemigoldbellp22cse@srishakthi.ac.in'),
+		('mohammedasani22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Mohammedasani Cse', 'mohammedasani22cse@srishakthi.ac.in'),
+		('vishwar22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Vishwar Cse', 'vishwar22cse@srishakthi.ac.in'),
+		('yasinmalikj22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Yasinmalikj Ece', 'yasinmalikj22ece@srishakthi.ac.in'),
+		('ajaykumarjs22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ajaykumarjs Cys', 'ajaykumarjs22cys@srishakthi.ac.in'),
+		('mohamedrafill22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Mohamedrafill Ads', 'mohamedrafill22ads@srishakthi.ac.in'),
+		('kirthikaamk22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Kirthikaamk Aml', 'kirthikaamk22aml@srishakthi.ac.in'),
+		('sanjeevikumarm22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sanjeevikumarm Aml', 'sanjeevikumarm22aml@srishakthi.ac.in'),
+		('deeksheethn22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Deeksheethn It', 'deeksheethn22it@srishakthi.ac.in'),
+		('matheshm22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Matheshm It', 'matheshm22it@srishakthi.ac.in'),
+		('ponnarasua22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ponnarasua It', 'ponnarasua22it@srishakthi.ac.in'),
+		('tharanil22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Tharanil Cse', 'tharanil22cse@srishakthi.ac.in'),
+		('dhivanans22eee', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Dhivanans Eee', 'dhivanans22eee@srishakthi.ac.in'),
+		('maheshkumaark22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Maheshkumaark Ads', 'maheshkumaark22ads@srishakthi.ac.in'),
+		('mohammedasathk22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Mohammedasathk Ads', 'mohammedasathk22ads@srishakthi.ac.in'),
+		('karthikadevim22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Karthikadevim It', 'karthikadevim22it@srishakthi.ac.in'),
+		('mervinj22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Mervinj It', 'mervinj22it@srishakthi.ac.in'),
+		('madhang22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Madhang Ece', 'madhang22ece@srishakthi.ac.in'),
+		('sriramm22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sriramm Ece', 'sriramm22ece@srishakthi.ac.in'),
+		('yuvankrishnap22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Yuvankrishnap Cys', 'yuvankrishnap22cys@srishakthi.ac.in'),
+		('harishj22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harishj Ads', 'harishj22ads@srishakthi.ac.in'),
+		('harishp22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harishp Ads', 'harishp22ads@srishakthi.ac.in'),
+		('bharathg22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Bharathg Aml', 'bharathg22aml@srishakthi.ac.in'),
+		('harinivasm22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harinivasm Aml', 'harinivasm22aml@srishakthi.ac.in'),
+		('harshadd22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harshadd Aml', 'harshadd22aml@srishakthi.ac.in'),
+		('dilipkumarn22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Dilipkumarn It', 'dilipkumarn22it@srishakthi.ac.in'),
+		('sivadharshinin22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sivadharshinin Cse', 'sivadharshinin22cse@srishakthi.ac.in'),
+		('thulasikishorep22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Thulasikishorep Cse', 'thulasikishorep22cse@srishakthi.ac.in'),
+		('ridhinyab22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ridhinyab Ads', 'ridhinyab22ads@srishakthi.ac.in'),
+		('ravichandranr22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Ravichandranr Aml', 'ravichandranr22aml@srishakthi.ac.in'),
+		('dharshand22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Dharshand It', 'dharshand22it@srishakthi.ac.in'),
+		('prabincs22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Prabincs Cse', 'prabincs22cse@srishakthi.ac.in'),
+		('saieshcb22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Saieshcb Cse', 'saieshcb22cse@srishakthi.ac.in'),
+		('dineshkumargm22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Dineshkumargm Ads', 'dineshkumargm22ads@srishakthi.ac.in'),
+		('seemamaglins22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Seemamaglins Ads', 'seemamaglins22ads@srishakthi.ac.in'),
+		('krishnant22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Krishnant Aml', 'krishnant22aml@srishakthi.ac.in'),
+		('robinanburajb22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Robinanburajb Aml', 'robinanburajb22aml@srishakthi.ac.in'),
+		('suryar22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Suryar Cse', 'suryar22cse@srishakthi.ac.in'),
+		('venyabalab22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Venyabalab Cse', 'venyabalab22cse@srishakthi.ac.in'),
+		('edwinrajaa22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Edwinrajaa Cys', 'edwinrajaa22cys@srishakthi.ac.in'),
+		('shanjaiysb22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Shanjaiysb Cys', 'shanjaiysb22cys@srishakthi.ac.in'),
+		('deepikas22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Deepikas Ads', 'deepikas22ads@srishakthi.ac.in'),
+		('nihasb22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Nihasb Ads', 'nihasb22ads@srishakthi.ac.in'),
+		('divyaprabhag22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Divyaprabhag It', 'divyaprabhag22it@srishakthi.ac.in'),
+		('magibalans22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Magibalans It', 'magibalans22it@srishakthi.ac.in'),
+		('sanjayr22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sanjayr Cse', 'sanjayr22cse@srishakthi.ac.in'),
+		('balupiraveenk22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Balupiraveenk Ece', 'balupiraveenk22ece@srishakthi.ac.in'),
+		('mohammedakmals22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Mohammedakmals Cys', 'mohammedakmals22cys@srishakthi.ac.in'),
+		('vishwanathasriramm22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Vishwanathasriramm Cys', 'vishwanathasriramm22cys@srishakthi.ac.in'),
+		('meenup22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Meenup Ads', 'meenup22ads@srishakthi.ac.in'),
+		('naveenkumarj22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Naveenkumarj Ads', 'naveenkumarj22ads@srishakthi.ac.in'),
+		('sarayumam22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sarayumam Ads', 'sarayumam22ads@srishakthi.ac.in'),
+		('rahulrn22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Rahulrn Aml', 'rahulrn22aml@srishakthi.ac.in'),
+		('shasaankg22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Shasaankg Aml', 'shasaankg22aml@srishakthi.ac.in'),
+		('harishk22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harishk It', 'harishk22it@srishakthi.ac.in'),
+		('tharunm22eee', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Tharunm Eee', 'tharunm22eee@srishakthi.ac.in'),
+		('saranprakashr22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Saranprakashr Ads', 'saranprakashr22ads@srishakthi.ac.in'),
+		('harisshks22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Harisshks Cse', 'harisshks22cse@srishakthi.ac.in'),
+		('rohithu22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Rohithu Cse', 'rohithu22cse@srishakthi.ac.in'),
+		('abigurug22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Abigurug Ece', 'abigurug22ece@srishakthi.ac.in'),
+		('anandhithac22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Anandhithac Ece', 'anandhithac22ece@srishakthi.ac.in'),
+		('anushnu22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Anushnu Cys', 'anushnu22cys@srishakthi.ac.in'),
+		('jeevak22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Jeevak Cys', 'jeevak22cys@srishakthi.ac.in'),
+		('Karthickb22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Karthickb Ads', 'Karthickb22ads@srishakthi.ac.in'),
+		('shikhasrinivas22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Shikhasrinivas Ads', 'shikhasrinivas22ads@srishakthi.ac.in'),
+		('snehalaanandkumar22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Snehalaanandkumar Aml', 'snehalaanandkumar22aml@srishakthi.ac.in'),
+		('meenaumadevim22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Meenaumadevim It', 'meenaumadevim22it@srishakthi.ac.in'),
+		('janarthana22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Janarthana Ece', 'janarthana22ece@srishakthi.ac.in'),
+		('pavithran22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Pavithran Ece', 'pavithran22ece@srishakthi.ac.in'),
+		('raghulkrishnac22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Raghulkrishnac Ece', 'raghulkrishnac22ece@srishakthi.ac.in'),
+		('albintenny22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Albintenny Cys', 'albintenny22cys@srishakthi.ac.in'),
+		('narendranav22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Narendranav Cys', 'narendranav22cys@srishakthi.ac.in'),
+		('monishv22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Monishv Aml', 'monishv22aml@srishakthi.ac.in'),
+		('sweathaj22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sweathaj Aml', 'sweathaj22aml@srishakthi.ac.in'),
+		('adithyars22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Adithyars Cse', 'adithyars22cse@srishakthi.ac.in'),
+		('bhavishnus22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Bhavishnus Cse', 'bhavishnus22cse@srishakthi.ac.in'),
+		('shalinis22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Shalinis Cse', 'shalinis22cse@srishakthi.ac.in'),
+		('sridhars22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sridhars Cse', 'sridhars22cse@srishakthi.ac.in'),
+		('karthikeyanscse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Karthikeyanscse', 'karthikeyanscse@srishakthi.ac.in'),
+		('nirmalmuraris22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Nirmalmuraris Ece', 'nirmalmuraris22ece@srishakthi.ac.in'),
+		('nithishkumarvv22ece', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Nithishkumarvv Ece', 'nithishkumarvv22ece@srishakthi.ac.in'),
+		('nivethav22cse', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Nivethav Cse', 'nivethav22cse@srishakthi.ac.in'),
+		('thirukumaranyuvaraj22cys', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Thirukumaranyuvaraj Cys', 'thirukumaranyuvaraj22cys@srishakthi.ac.in'),
+		('sandhyav22ads', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sandhyav Ads', 'sandhyav22ads@srishakthi.ac.in'),
+		('sibis22aml', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Sibis Aml', 'sibis22aml@srishakthi.ac.in'),
+		('abinayas22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Abinayas It', 'abinayas22it@srishakthi.ac.in'),
+		('kumarans22it', '$2b$10$0OgoMAteFeFb/ayPmdhDN.EGo5b6HhXbvHn3HgTmkjpwZoQncsgam', 'user', 'Kumarans It', 'kumarans22it@srishakthi.ac.in')
 	RETURNING "id"
 ),
 topic_cats AS (
 	INSERT INTO "topic_categories" ("name", "description", "icon_name", "created_by")
 	SELECT 
-		'Mathematics', 
-		'Mathematics concepts including algebra, geometry, and calculus', 
+		'Java', 
+		'Java programming fundamentals and concepts', 
 		'BookOpen', 
 		(SELECT "id" FROM admin_user)
 	UNION ALL
 	SELECT 
-		'Science', 
-		'Science topics covering physics, chemistry, and biology', 
-		'BookOpen', 
-		(SELECT "id" FROM admin_user)
-	UNION ALL
-	SELECT 
-		'English', 
-		'English language, literature, and communication skills', 
-		'BookOpen', 
-		(SELECT "id" FROM admin_user)
-	UNION ALL
-	SELECT 
-		'History', 
-		'World history, historical events, and civilizations', 
+		'Python', 
+		'Python programming fundamentals and concepts', 
 		'BookOpen', 
 		(SELECT "id" FROM admin_user)
 	RETURNING "id", "name"
 ),
-math_questions AS (
+java_questions AS (
 	INSERT INTO "questions" ("topic_category_id", "question_text", "difficulty", "expected_key_points", "created_by")
 	SELECT 
-		(SELECT "id" FROM topic_cats WHERE "name" = 'Mathematics'),
+		(SELECT "id" FROM topic_cats WHERE "name" = 'Java'),
 		val.question_text,
 		val.difficulty,
 		val.expected_key_points::jsonb,
 		(SELECT "id" FROM admin_user)
 	FROM (VALUES
-		('Explain the Pythagorean theorem and provide an example of its application.', 'medium', '["a² + b² = c²", "right triangle", "hypotenuse", "example"]'::jsonb),
-		('What is the difference between mean, median, and mode? Provide an example.', 'medium', '["mean", "median", "mode", "average", "example"]'::jsonb),
-		('Explain how to solve a quadratic equation using the quadratic formula.', 'medium', '["ax² + bx + c = 0", "quadratic formula", "discriminant", "solutions"]'::jsonb),
-		('What is the difference between prime and composite numbers? Give examples.', 'easy', '["prime numbers", "composite numbers", "factors", "examples"]'::jsonb),
-		('Explain the concept of slope in linear equations. How do you calculate it?', 'medium', '["slope", "rise over run", "y = mx + b", "calculation"]'::jsonb),
-		('What is the area of a circle? Explain the formula and its components.', 'easy', '["πr²", "radius", "pi", "circle area"]'::jsonb),
-		('Describe the order of operations (PEMDAS) and why it''s important.', 'easy', '["PEMDAS", "BODMAS", "order", "operations", "parentheses"]'::jsonb),
-		('Explain the concept of derivatives in calculus and their practical applications.', 'hard', '["derivative", "rate of change", "calculus", "applications"]'::jsonb),
-		('What is the difference between permutations and combinations? Provide examples.', 'medium', '["permutations", "combinations", "order matters", "examples"]'::jsonb),
-		('Explain the properties of exponents with examples.', 'medium', '["exponents", "properties", "multiplication", "division", "examples"]'::jsonb)
+		('Which company owns Java now and what is the latest version?', 'easy', '["Oracle", "version", "ownership"]'::jsonb),
+		('What are the 2 steps in Java compilation. Explain the 2 steps', 'medium', '["compile", "bytecode", "execution"]'::jsonb),
+		('Explain the difference between Java compiler & Interpreter', 'medium', '["compiler", "interpreter", "bytecode", "machine code"]'::jsonb),
+		('Is JVM platform independent?', 'easy', '["JVM", "platform dependent", "platform independent"]'::jsonb),
+		('How does java ensure portability', 'medium', '["bytecode", "JVM", "platform independent"]'::jsonb),
+		('Explain JVM, JRE, JDK', 'medium', '["JVM", "JRE", "JDK", "relationship"]'::jsonb),
+		('What is a class loader? What is its purpose?', 'medium', '["class loader", "loading", "classes", "runtime"]'::jsonb),
+		('Explain each word public static void main(String[] args)', 'medium', '["public", "static", "void", "main", "String array"]'::jsonb),
+		('What is meant by a package in Java?', 'easy', '["package", "namespace", "organization", "classes"]'::jsonb),
+		('When an object is created, is the memory allocated in stack or heap?', 'easy', '["heap", "object", "memory allocation"]'::jsonb),
+		('What is Java String pool?', 'medium', '["String pool", "memory", "optimization", "strings"]'::jsonb)
 	) AS val(question_text, difficulty, expected_key_points)
 	RETURNING "id"
 ),
-science_questions AS (
+python_questions AS (
 	INSERT INTO "questions" ("topic_category_id", "question_text", "difficulty", "expected_key_points", "created_by")
 	SELECT 
-		(SELECT "id" FROM topic_cats WHERE "name" = 'Science'),
+		(SELECT "id" FROM topic_cats WHERE "name" = 'Python'),
 		val.question_text,
 		val.difficulty,
 		val.expected_key_points::jsonb,
 		(SELECT "id" FROM admin_user)
 	FROM (VALUES
-		('Explain the water cycle and describe each stage in detail.', 'medium', '["evaporation", "condensation", "precipitation", "collection"]'::jsonb),
-		('What is photosynthesis? Explain the process and its importance.', 'medium', '["photosynthesis", "chlorophyll", "carbon dioxide", "oxygen", "glucose"]'::jsonb),
-		('Describe Newton''s three laws of motion with examples for each.', 'medium', '["Newton''s laws", "inertia", "force", "action-reaction", "examples"]'::jsonb),
-		('What is the difference between an atom and a molecule? Provide examples.', 'easy', '["atom", "molecule", "element", "compound", "examples"]'::jsonb),
-		('Explain the structure and function of DNA in living organisms.', 'hard', '["DNA", "double helix", "nucleotides", "genetic information"]'::jsonb),
-		('What is the greenhouse effect and why is it important for Earth''s climate?', 'medium', '["greenhouse effect", "carbon dioxide", "global warming", "atmosphere"]'::jsonb),
-		('Describe the difference between physical and chemical changes with examples.', 'easy', '["physical change", "chemical change", "reversible", "examples"]'::jsonb),
-		('Explain the process of cellular respiration and its significance.', 'medium', '["cellular respiration", "mitochondria", "ATP", "energy"]'::jsonb),
-		('What is the difference between renewable and non-renewable energy sources?', 'easy', '["renewable", "non-renewable", "solar", "fossil fuels", "examples"]'::jsonb),
-		('Describe the human circulatory system and explain how blood flows through the body.', 'medium', '["heart", "arteries", "veins", "blood flow", "circulation"]'::jsonb)
+		('What is list comprehension? Give an example', 'medium', '["list comprehension", "syntax", "example", "iteration"]'::jsonb),
+		('What happens when you assign list2 = list1?', 'easy', '["reference", "shallow copy", "same object"]'::jsonb),
+		('Explain slicing function in python', 'easy', '["slicing", "syntax", "start", "stop", "step"]'::jsonb),
+		('What is the difference between a list and a dictionary', 'easy', '["list", "dictionary", "key-value", "ordered"]'::jsonb),
+		('What is the use of pass statement in python. Give an example', 'easy', '["pass", "placeholder", "null operation", "example"]'::jsonb),
+		('How is exception handling done in python', 'medium', '["try", "except", "exception handling", "finally"]'::jsonb),
+		('What is a lambda function? Give an example', 'medium', '["lambda", "anonymous function", "syntax", "example"]'::jsonb),
+		('How are arguments passed to functions - by value or by reference in Python?', 'medium', '["pass by reference", "pass by value", "object reference"]'::jsonb),
+		('Can we pass a function as an argument in python? Give an example', 'medium', '["first-class function", "higher-order function", "example"]'::jsonb),
+		('Explain try except block in python with an example', 'medium', '["try", "except", "exception", "example", "error handling"]'::jsonb),
+		('What are the different variable scopes in python', 'medium', '["local", "global", "nonlocal", "scope"]'::jsonb)
 	) AS val(question_text, difficulty, expected_key_points)
 	RETURNING "id"
 ),
-english_questions AS (
-	INSERT INTO "questions" ("topic_category_id", "question_text", "difficulty", "expected_key_points", "created_by")
-	SELECT 
-		(SELECT "id" FROM topic_cats WHERE "name" = 'English'),
-		val.question_text,
-		val.difficulty,
-		val.expected_key_points::jsonb,
-		(SELECT "id" FROM admin_user)
-	FROM (VALUES
-		('Explain the difference between a simile and a metaphor with examples.', 'medium', '["simile", "metaphor", "comparison", "like", "as", "examples"]'::jsonb),
-		('What is the difference between active and passive voice? Provide examples.', 'medium', '["active voice", "passive voice", "subject", "object", "examples"]'::jsonb),
-		('Describe the three main types of point of view in literature with examples.', 'medium', '["first person", "second person", "third person", "narrator", "examples"]'::jsonb),
-		('What is the difference between a topic sentence and a thesis statement?', 'easy', '["topic sentence", "thesis statement", "paragraph", "essay"]'::jsonb),
-		('Explain the use of figurative language in poetry and provide examples.', 'medium', '["figurative language", "imagery", "symbolism", "poetry", "examples"]'::jsonb),
-		('What are the key elements of a well-structured essay?', 'easy', '["introduction", "body paragraphs", "conclusion", "thesis", "structure"]'::jsonb),
-		('Describe the difference between denotation and connotation with examples.', 'medium', '["denotation", "connotation", "dictionary meaning", "implied meaning", "examples"]'::jsonb),
-		('Explain the importance of proper punctuation in written communication.', 'easy', '["punctuation", "clarity", "meaning", "communication"]'::jsonb),
-		('What is the difference between a primary and secondary source?', 'medium', '["primary source", "secondary source", "original", "interpretation", "research"]'::jsonb),
-		('Describe the characteristics of different literary genres with examples.', 'medium', '["fiction", "non-fiction", "poetry", "drama", "genre", "examples"]'::jsonb)
-	) AS val(question_text, difficulty, expected_key_points)
-	RETURNING "id"
+all_java_ids AS (
+	SELECT jsonb_agg("id"::text) as ids FROM java_questions
 ),
-history_questions AS (
-	INSERT INTO "questions" ("topic_category_id", "question_text", "difficulty", "expected_key_points", "created_by")
-	SELECT 
-		(SELECT "id" FROM topic_cats WHERE "name" = 'History'),
-		val.question_text,
-		val.difficulty,
-		val.expected_key_points::jsonb,
-		(SELECT "id" FROM admin_user)
-	FROM (VALUES
-		('Explain the causes and consequences of World War I.', 'hard', '["World War I", "alliances", "assassination", "treaty", "consequences"]'::jsonb),
-		('Describe the significance of the Renaissance period in European history.', 'medium', '["Renaissance", "Italy", "art", "science", "humanism", "impact"]'::jsonb),
-		('What were the main causes of the American Revolution?', 'medium', '["taxation", "representation", "independence", "British rule", "causes"]'::jsonb),
-		('Explain the importance of the Industrial Revolution and its global impact.', 'medium', '["Industrial Revolution", "technology", "economy", "social change", "impact"]'::jsonb),
-		('Describe the key events and significance of the Civil Rights Movement.', 'hard', '["civil rights", "equality", "leadership", "events", "significance"]'::jsonb),
-		('What was the Cold War and how did it affect international relations?', 'hard', '["Cold War", "USA", "USSR", "tensions", "proxy wars", "impact"]'::jsonb),
-		('Explain the causes and effects of the French Revolution.', 'medium', '["French Revolution", "causes", "effects", "monarchy", "democracy"]'::jsonb),
-		('Describe the major achievements of ancient civilizations like Egypt or Mesopotamia.', 'medium', '["ancient civilizations", "achievements", "culture", "technology", "contributions"]'::jsonb),
-		('What was the significance of the Magna Carta in the development of democracy?', 'medium', '["Magna Carta", "democracy", "rights", "limitation of power", "significance"]'::jsonb),
-		('Explain the impact of colonialism on different regions of the world.', 'hard', '["colonialism", "imperialism", "economic", "cultural", "political", "impact"]'::jsonb)
-	) AS val(question_text, difficulty, expected_key_points)
-	RETURNING "id"
-),
-all_math_ids AS (
-	SELECT jsonb_agg("id"::text) as ids FROM math_questions
-),
-all_science_ids AS (
-	SELECT jsonb_agg("id"::text) as ids FROM science_questions
-),
-all_english_ids AS (
-	SELECT jsonb_agg("id"::text) as ids FROM english_questions
-),
-all_history_ids AS (
-	SELECT jsonb_agg("id"::text) as ids FROM history_questions
+all_python_ids AS (
+	SELECT jsonb_agg("id"::text) as ids FROM python_questions
 )
 INSERT INTO "tests" ("name", "description", "question_ids", "duration", "difficulty", "is_active", "created_by")
 SELECT 
-	'Mathematics Fundamentals Test',
-	'Comprehensive mathematics assessment covering algebra, geometry, and problem-solving',
-	(SELECT ids FROM all_math_ids),
+	'Java Fundamentals Test',
+	'Comprehensive Java programming assessment covering core concepts',
+	(SELECT ids FROM all_java_ids),
 	60,
 	'mixed',
 	true,
 	(SELECT "id" FROM admin_user)
 UNION ALL
 SELECT 
-	'Science Fundamentals Test',
-	'Comprehensive science assessment covering physics, chemistry, and biology concepts',
-	(SELECT ids FROM all_science_ids),
-	60,
-	'mixed',
-	true,
-	(SELECT "id" FROM admin_user)
-UNION ALL
-SELECT 
-	'English Language and Literature Test',
-	'Assessment covering language skills, literary analysis, and communication',
-	(SELECT ids FROM all_english_ids),
-	60,
-	'mixed',
-	true,
-	(SELECT "id" FROM admin_user)
-UNION ALL
-SELECT 
-	'World History Test',
-	'Comprehensive history assessment covering major events, civilizations, and historical periods',
-	(SELECT ids FROM all_history_ids),
+	'Python Fundamentals Test',
+	'Comprehensive Python programming assessment covering core concepts',
+	(SELECT ids FROM all_python_ids),
 	60,
 	'mixed',
 	true,
@@ -291,17 +306,16 @@ SELECT
 -- ============================================
 -- 
 -- Default Credentials:
--- Admin: username='admin', password='admin123'
--- Students: username='soorya'/'sharvesh'/'sudhir'/'vishwanathan', password='Siet@123'
+-- Admin: username='admin', password='admin123', email='admin@srishakthi.ac.in'
+-- Students: All students have password='Siet@123'
+--   Username is the part before @ in email (e.g., ramalingamm22ece for ramalingamm22ece@srishakthi.ac.in)
 --
 -- Created:
 -- - 1 admin user
--- - 4 student users
--- - 4 topic categories (Mathematics, Science, English, History)
--- - 10 Mathematics questions
--- - 10 Science questions
--- - 10 English questions
--- - 10 History questions
--- - 4 active tests (one for each topic category)
+-- - 94 student users
+-- - 2 topic categories (Java, Python)
+-- - 11 Java questions
+-- - 11 Python questions
+-- - 2 active tests (Java Fundamentals Test, Python Fundamentals Test)
 -- ============================================
 
