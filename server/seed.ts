@@ -8,7 +8,7 @@ async function seed() {
 
   try {
     // Clear existing data (in correct order due to foreign key constraints)
-    console.log("Clearing existing data...");
+    console.log("🗑️  Clearing existing data...");
     await db.delete(scores);
     await db.delete(interviewTurns);
     await db.delete(interviewSessions);
@@ -16,7 +16,7 @@ async function seed() {
     await db.delete(tests);
     await db.delete(topicCategories);
     await db.delete(users);
-    console.log("Existing data cleared");
+    console.log("✅ Existing data cleared");
 
     // Create admin user
     const hashedPassword = await hashPassword("admin123");
@@ -27,19 +27,112 @@ async function seed() {
         password: hashedPassword,
         role: "admin",
         fullName: "Admin User",
-        email: "admin@gmail.com",
+        email: "admin@srishakthi.ac.in",
       })
       .returning();
 
-    console.log("Created admin user:", admin.username);
+    console.log("✅ Created admin user:", admin.username);
 
     // Create all student users with password "Siet@123"
     const studentPassword = await hashPassword("Siet@123");
     const studentEmails = [
-      "soorya@gmail.com",
-      "sharvesh@gmail.com",
-      "sudhir@gmail.com",
-      "vishwanathan@gmail.com",
+      "ramalingamm22ece@srishakthi.ac.in",
+      "gowthamg22cys@srishakthi.ac.in",
+      "kesavans22cys@srishakthi.ac.in",
+      "noorafikjalaludeena22ads@srishakthi.ac.in",
+      "rishir22ads@srishakthi.ac.in",
+      "sivraamkrishnankv22ads@srishakthi.ac.in",
+      "varuns22ads@srishakthi.ac.in",
+      "deepakt22aml@srishakthi.ac.in",
+      "prakashdassr22aml@srishakthi.ac.in",
+      "abdulgousea22it@srishakthi.ac.in",
+      "ancyjemigoldbellp22cse@srishakthi.ac.in",
+      "mohammedasani22cse@srishakthi.ac.in",
+      "vishwar22cse@srishakthi.ac.in",
+      "yasinmalikj22ece@srishakthi.ac.in",
+      "ajaykumarjs22cys@srishakthi.ac.in",
+      "mohamedrafill22ads@srishakthi.ac.in",
+      "kirthikaamk22aml@srishakthi.ac.in",
+      "sanjeevikumarm22aml@srishakthi.ac.in",
+      "deeksheethn22it@srishakthi.ac.in",
+      "matheshm22it@srishakthi.ac.in",
+      "ponnarasua22it@srishakthi.ac.in",
+      "tharanil22cse@srishakthi.ac.in",
+      "dhivanans22eee@srishakthi.ac.in",
+      "maheshkumaark22ads@srishakthi.ac.in",
+      "mohammedasathk22ads@srishakthi.ac.in",
+      "karthikadevim22it@srishakthi.ac.in",
+      "mervinj22it@srishakthi.ac.in",
+      "madhang22ece@srishakthi.ac.in",
+      "sriramm22ece@srishakthi.ac.in",
+      "yuvankrishnap22cys@srishakthi.ac.in",
+      "harishj22ads@srishakthi.ac.in",
+      "harishp22ads@srishakthi.ac.in",
+      "bharathg22aml@srishakthi.ac.in",
+      "harinivasm22aml@srishakthi.ac.in",
+      "harshadd22aml@srishakthi.ac.in",
+      "dilipkumarn22it@srishakthi.ac.in",
+      "sivadharshinin22cse@srishakthi.ac.in",
+      "thulasikishorep22cse@srishakthi.ac.in",
+      "ridhinyab22ads@srishakthi.ac.in",
+      "ravichandranr22aml@srishakthi.ac.in",
+      "dharshand22it@srishakthi.ac.in",
+      "prabincs22cse@srishakthi.ac.in",
+      "saieshcb22cse@srishakthi.ac.in",
+      "dineshkumargm22ads@srishakthi.ac.in",
+      "seemamaglins22ads@srishakthi.ac.in",
+      "krishnant22aml@srishakthi.ac.in",
+      "robinanburajb22aml@srishakthi.ac.in",
+      "suryar22cse@srishakthi.ac.in",
+      "venyabalab22cse@srishakthi.ac.in",
+      "edwinrajaa22cys@srishakthi.ac.in",
+      "shanjaiysb22cys@srishakthi.ac.in",
+      "deepikas22ads@srishakthi.ac.in",
+      "nihasb22ads@srishakthi.ac.in",
+      "divyaprabhag22it@srishakthi.ac.in",
+      "magibalans22it@srishakthi.ac.in",
+      "sanjayr22cse@srishakthi.ac.in",
+      "balupiraveenk22ece@srishakthi.ac.in",
+      "mohammedakmals22cys@srishakthi.ac.in",
+      "vishwanathasriramm22cys@srishakthi.ac.in",
+      "meenup22ads@srishakthi.ac.in",
+      "naveenkumarj22ads@srishakthi.ac.in",
+      "sarayumam22ads@srishakthi.ac.in",
+      "rahulrn22aml@srishakthi.ac.in",
+      "shasaankg22aml@srishakthi.ac.in",
+      "harishk22it@srishakthi.ac.in",
+      "tharunm22eee@srishakthi.ac.in",
+      "saranprakashr22ads@srishakthi.ac.in",
+      "harisshks22cse@srishakthi.ac.in",
+      "rohithu22cse@srishakthi.ac.in",
+      "abigurug22ece@srishakthi.ac.in",
+      "anandhithac22ece@srishakthi.ac.in",
+      "anushnu22cys@srishakthi.ac.in",
+      "jeevak22cys@srishakthi.ac.in",
+      "Karthickb22ads@srishakthi.ac.in",
+      "shikhasrinivas22ads@srishakthi.ac.in",
+      "snehalaanandkumar22aml@srishakthi.ac.in",
+      "meenaumadevim22it@srishakthi.ac.in",
+      "janarthana22ece@srishakthi.ac.in",
+      "pavithran22ece@srishakthi.ac.in",
+      "raghulkrishnac22ece@srishakthi.ac.in",
+      "albintenny22cys@srishakthi.ac.in",
+      "narendranav22cys@srishakthi.ac.in",
+      "monishv22aml@srishakthi.ac.in",
+      "sweathaj22aml@srishakthi.ac.in",
+      "adithyars22cse@srishakthi.ac.in",
+      "bhavishnus22cse@srishakthi.ac.in",
+      "shalinis22cse@srishakthi.ac.in",
+      "sridhars22cse@srishakthi.ac.in",
+      "karthikeyanscse@srishakthi.ac.in",
+      "nirmalmuraris22ece@srishakthi.ac.in",
+      "nithishkumarvv22ece@srishakthi.ac.in",
+      "nivethav22cse@srishakthi.ac.in",
+      "thirukumaranyuvaraj22cys@srishakthi.ac.in",
+      "sandhyav22ads@srishakthi.ac.in",
+      "sibis22aml@srishakthi.ac.in",
+      "abinayas22it@srishakthi.ac.in",
+      "kumarans22it@srishakthi.ac.in",
     ];
 
     const studentUsers = [];
@@ -68,108 +161,93 @@ async function seed() {
       studentUsers.push(user);
     }
 
-    console.log(` Created ${studentUsers.length} student users`);
+    console.log(`✅ Created ${studentUsers.length} student users`);
 
-    // Create topic categories (School Subjects)
-    const [mathTopicCategory] = await db
+    // Create topic categories
+    const [javaTopicCategory] = await db
       .insert(topicCategories)
       .values({
-        name: "Mathematics",
-        description: "Mathematics concepts including algebra, geometry, and calculus",
+        name: "Java",
+        description: "Java programming fundamentals and concepts",
         iconName: "BookOpen",
         createdBy: admin.id,
       })
       .returning();
 
-    const [scienceTopicCategory] = await db
+    const [pythonTopicCategory] = await db
       .insert(topicCategories)
       .values({
-        name: "Science",
-        description: "Science topics covering physics, chemistry, and biology",
+        name: "Python",
+        description: "Python programming fundamentals and concepts",
         iconName: "BookOpen",
         createdBy: admin.id,
       })
       .returning();
 
-    const [englishTopicCategory] = await db
-      .insert(topicCategories)
-      .values({
-        name: "English",
-        description: "English language, literature, and communication skills",
-        iconName: "BookOpen",
-        createdBy: admin.id,
-      })
-      .returning();
+    console.log("✅ Created topic categories: Java, Python");
 
-    const [historyTopicCategory] = await db
-      .insert(topicCategories)
-      .values({
-        name: "History",
-        description: "World history, historical events, and civilizations",
-        iconName: "BookOpen",
-        createdBy: admin.id,
-      })
-      .returning();
-
-    console.log(" Created topic categories: Mathematics, Science, English, History");
-
-    // Create Mathematics questions
-    const mathQuestions = [
+    // Create Java questions
+    const javaQuestions = [
       {
-        questionText: "Explain the Pythagorean theorem and provide an example of its application.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["a² + b² = c²", "right triangle", "hypotenuse", "example"],
-      },
-      {
-        questionText: "What is the difference between mean, median, and mode? Provide an example.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["mean", "median", "mode", "average", "example"],
-      },
-      {
-        questionText: "Explain how to solve a quadratic equation using the quadratic formula.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["ax² + bx + c = 0", "quadratic formula", "discriminant", "solutions"],
-      },
-      {
-        questionText: "What is the difference between prime and composite numbers? Give examples.",
+        questionText: "Which company owns Java now and what is the latest version?",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["prime numbers", "composite numbers", "factors", "examples"],
+        expectedKeyPoints: ["Oracle", "version", "ownership"],
       },
       {
-        questionText: "Explain the concept of slope in linear equations. How do you calculate it?",
+        questionText: "What are the 2 steps in Java compilation. Explain the 2 steps",
         difficulty: "medium" as const,
-        expectedKeyPoints: ["slope", "rise over run", "y = mx + b", "calculation"],
+        expectedKeyPoints: ["compile", "bytecode", "execution"],
       },
       {
-        questionText: "What is the area of a circle? Explain the formula and its components.",
+        questionText: "Explain the difference between Java compiler & Interpreter",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["compiler", "interpreter", "bytecode", "machine code"],
+      },
+      {
+        questionText: "Is JVM platform independent?",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["πr²", "radius", "pi", "circle area"],
+        expectedKeyPoints: ["JVM", "platform dependent", "platform independent"],
       },
       {
-        questionText: "Describe the order of operations (PEMDAS) and why it's important.",
+        questionText: "How does java ensure portability",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["bytecode", "JVM", "platform independent"],
+      },
+      {
+        questionText: "Explain JVM, JRE, JDK",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["JVM", "JRE", "JDK", "relationship"],
+      },
+      {
+        questionText: "What is a class loader? What is its purpose?",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["class loader", "loading", "classes", "runtime"],
+      },
+      {
+        questionText: "Explain each word public static void main(String[] args)",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["public", "static", "void", "main", "String array"],
+      },
+      {
+        questionText: "What is meant by a package in Java?",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["PEMDAS", "BODMAS", "order", "operations", "parentheses"],
+        expectedKeyPoints: ["package", "namespace", "organization", "classes"],
       },
       {
-        questionText: "Explain the concept of derivatives in calculus and their practical applications.",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["derivative", "rate of change", "calculus", "applications"],
+        questionText: "When an object is created, is the memory allocated in stack or heap?",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["heap", "object", "memory allocation"],
       },
       {
-        questionText: "What is the difference between permutations and combinations? Provide examples.",
+        questionText: "What is Java String pool?",
         difficulty: "medium" as const,
-        expectedKeyPoints: ["permutations", "combinations", "order matters", "examples"],
-      },
-      {
-        questionText: "Explain the properties of exponents with examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["exponents", "properties", "multiplication", "division", "examples"],
+        expectedKeyPoints: ["String pool", "memory", "optimization", "strings"],
       },
     ];
 
     await db.insert(questions).values(
-      mathQuestions.map((q) => ({
-        topicCategoryId: mathTopicCategory.id,
+      javaQuestions.map((q) => ({
+        topicCategoryId: javaTopicCategory.id,
         questionText: q.questionText,
         difficulty: q.difficulty,
         expectedKeyPoints: q.expectedKeyPoints,
@@ -177,65 +255,70 @@ async function seed() {
       }))
     );
 
-    console.log(` Created ${mathQuestions.length} Mathematics questions`);
+    console.log(`✅ Created ${javaQuestions.length} Java questions`);
 
-    // Create Science questions
-    const scienceQuestions = [
+    // Create Python questions
+    const pythonQuestions = [
       {
-        questionText: "Explain the water cycle and describe each stage in detail.",
+        questionText: "What is list comprehension? Give an example",
         difficulty: "medium" as const,
-        expectedKeyPoints: ["evaporation", "condensation", "precipitation", "collection"],
+        expectedKeyPoints: ["list comprehension", "syntax", "example", "iteration"],
       },
       {
-        questionText: "What is photosynthesis? Explain the process and its importance.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["photosynthesis", "chlorophyll", "carbon dioxide", "oxygen", "glucose"],
-      },
-      {
-        questionText: "Describe Newton's three laws of motion with examples for each.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["Newton's laws", "inertia", "force", "action-reaction", "examples"],
-      },
-      {
-        questionText: "What is the difference between an atom and a molecule? Provide examples.",
+        questionText: "What happens when you assign list2 = list1?",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["atom", "molecule", "element", "compound", "examples"],
+        expectedKeyPoints: ["reference", "shallow copy", "same object"],
       },
       {
-        questionText: "Explain the structure and function of DNA in living organisms.",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["DNA", "double helix", "nucleotides", "genetic information"],
-      },
-      {
-        questionText: "What is the greenhouse effect and why is it important for Earth's climate?",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["greenhouse effect", "carbon dioxide", "global warming", "atmosphere"],
-      },
-      {
-        questionText: "Describe the difference between physical and chemical changes with examples.",
+        questionText: "Explain slicing function in python",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["physical change", "chemical change", "reversible", "examples"],
+        expectedKeyPoints: ["slicing", "syntax", "start", "stop", "step"],
       },
       {
-        questionText: "Explain the process of cellular respiration and its significance.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["cellular respiration", "mitochondria", "ATP", "energy"],
-      },
-      {
-        questionText: "What is the difference between renewable and non-renewable energy sources?",
+        questionText: "What is the difference between a list and a dictionary",
         difficulty: "easy" as const,
-        expectedKeyPoints: ["renewable", "non-renewable", "solar", "fossil fuels", "examples"],
+        expectedKeyPoints: ["list", "dictionary", "key-value", "ordered"],
       },
       {
-        questionText: "Describe the human circulatory system and explain how blood flows through the body.",
+        questionText: "What is the use of pass statement in python. Give an example",
+        difficulty: "easy" as const,
+        expectedKeyPoints: ["pass", "placeholder", "null operation", "example"],
+      },
+      {
+        questionText: "How is exception handling done in python",
         difficulty: "medium" as const,
-        expectedKeyPoints: ["heart", "arteries", "veins", "blood flow", "circulation"],
+        expectedKeyPoints: ["try", "except", "exception handling", "finally"],
+      },
+      {
+        questionText: "What is a lambda function? Give an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["lambda", "anonymous function", "syntax", "example"],
+      },
+      {
+        questionText: "How are arguments passed to functions - by value or by reference in Python?",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["pass by reference", "pass by value", "object reference"],
+      },
+      {
+        questionText: "Can we pass a function as an argument in python? Give an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["first-class function", "higher-order function", "example"],
+      },
+      {
+        questionText: "Explain try except block in python with an example",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["try", "except", "exception", "example", "error handling"],
+      },
+      {
+        questionText: "What are the different variable scopes in python",
+        difficulty: "medium" as const,
+        expectedKeyPoints: ["local", "global", "nonlocal", "scope"],
       },
     ];
 
     await db.insert(questions).values(
-      scienceQuestions.map((q) => ({
-        topicCategoryId: scienceTopicCategory.id,
+      pythonQuestions.map((q) => ({
+        topicCategoryId: pythonTopicCategory.id,
         questionText: q.questionText,
         difficulty: q.difficulty,
         expectedKeyPoints: q.expectedKeyPoints,
@@ -243,168 +326,26 @@ async function seed() {
       }))
     );
 
-    console.log(` Created ${scienceQuestions.length} Science questions`);
-
-    // Create English questions
-    const englishQuestions = [
-      {
-        questionText: "Explain the difference between a simile and a metaphor with examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["simile", "metaphor", "comparison", "like", "as", "examples"],
-      },
-      {
-        questionText: "What is the difference between active and passive voice? Provide examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["active voice", "passive voice", "subject", "object", "examples"],
-      },
-      {
-        questionText: "Describe the three main types of point of view in literature with examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["first person", "second person", "third person", "narrator", "examples"],
-      },
-      {
-        questionText: "What is the difference between a topic sentence and a thesis statement?",
-        difficulty: "easy" as const,
-        expectedKeyPoints: ["topic sentence", "thesis statement", "paragraph", "essay"],
-      },
-      {
-        questionText: "Explain the use of figurative language in poetry and provide examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["figurative language", "imagery", "symbolism", "poetry", "examples"],
-      },
-      {
-        questionText: "What are the key elements of a well-structured essay?",
-        difficulty: "easy" as const,
-        expectedKeyPoints: ["introduction", "body paragraphs", "conclusion", "thesis", "structure"],
-      },
-      {
-        questionText: "Describe the difference between denotation and connotation with examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["denotation", "connotation", "dictionary meaning", "implied meaning", "examples"],
-      },
-      {
-        questionText: "Explain the importance of proper punctuation in written communication.",
-        difficulty: "easy" as const,
-        expectedKeyPoints: ["punctuation", "clarity", "meaning", "communication"],
-      },
-      {
-        questionText: "What is the difference between a primary and secondary source?",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["primary source", "secondary source", "original", "interpretation", "research"],
-      },
-      {
-        questionText: "Describe the characteristics of different literary genres with examples.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["fiction", "non-fiction", "poetry", "drama", "genre", "examples"],
-      },
-    ];
-
-    await db.insert(questions).values(
-      englishQuestions.map((q) => ({
-        topicCategoryId: englishTopicCategory.id,
-        questionText: q.questionText,
-        difficulty: q.difficulty,
-        expectedKeyPoints: q.expectedKeyPoints,
-        createdBy: admin.id,
-      }))
-    );
-
-    console.log(` Created ${englishQuestions.length} English questions`);
-
-    // Create History questions
-    const historyQuestions = [
-      {
-        questionText: "Explain the causes and consequences of World War I.",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["World War I", "alliances", "assassination", "treaty", "consequences"],
-      },
-      {
-        questionText: "Describe the significance of the Renaissance period in European history.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["Renaissance", "Italy", "art", "science", "humanism", "impact"],
-      },
-      {
-        questionText: "What were the main causes of the American Revolution?",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["taxation", "representation", "independence", "British rule", "causes"],
-      },
-      {
-        questionText: "Explain the importance of the Industrial Revolution and its global impact.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["Industrial Revolution", "technology", "economy", "social change", "impact"],
-      },
-      {
-        questionText: "Describe the key events and significance of the Civil Rights Movement.",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["civil rights", "equality", "leadership", "events", "significance"],
-      },
-      {
-        questionText: "What was the Cold War and how did it affect international relations?",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["Cold War", "USA", "USSR", "tensions", "proxy wars", "impact"],
-      },
-      {
-        questionText: "Explain the causes and effects of the French Revolution.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["French Revolution", "causes", "effects", "monarchy", "democracy"],
-      },
-      {
-        questionText: "Describe the major achievements of ancient civilizations like Egypt or Mesopotamia.",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["ancient civilizations", "achievements", "culture", "technology", "contributions"],
-      },
-      {
-        questionText: "What was the significance of the Magna Carta in the development of democracy?",
-        difficulty: "medium" as const,
-        expectedKeyPoints: ["Magna Carta", "democracy", "rights", "limitation of power", "significance"],
-      },
-      {
-        questionText: "Explain the impact of colonialism on different regions of the world.",
-        difficulty: "hard" as const,
-        expectedKeyPoints: ["colonialism", "imperialism", "economic", "cultural", "political", "impact"],
-      },
-    ];
-
-    await db.insert(questions).values(
-      historyQuestions.map((q) => ({
-        topicCategoryId: historyTopicCategory.id,
-        questionText: q.questionText,
-        difficulty: q.difficulty,
-        expectedKeyPoints: q.expectedKeyPoints,
-        createdBy: admin.id,
-      }))
-    );
-
-    console.log(` Created ${historyQuestions.length} History questions`);
+    console.log(`✅ Created ${pythonQuestions.length} Python questions`);
 
     // Get all questions for creating tests
-    const allMathQuestions = await db
+    const allJavaQuestions = await db
       .select()
       .from(questions)
-      .where(eq(questions.topicCategoryId, mathTopicCategory.id));
+      .where(eq(questions.topicCategoryId, javaTopicCategory.id));
     
-    const allScienceQuestions = await db
+    const allPythonQuestions = await db
       .select()
       .from(questions)
-      .where(eq(questions.topicCategoryId, scienceTopicCategory.id));
-
-    const allEnglishQuestions = await db
-      .select()
-      .from(questions)
-      .where(eq(questions.topicCategoryId, englishTopicCategory.id));
-
-    const allHistoryQuestions = await db
-      .select()
-      .from(questions)
-      .where(eq(questions.topicCategoryId, historyTopicCategory.id));
+      .where(eq(questions.topicCategoryId, pythonTopicCategory.id));
 
     // Create tests
-    const [mathTest] = await db
+    const [javaTest] = await db
       .insert(tests)
       .values({
-        name: "Mathematics Fundamentals Test",
-        description: "Comprehensive mathematics assessment covering algebra, geometry, and problem-solving",
-        questionIds: allMathQuestions.map((q) => q.id),
+        name: "Java Fundamentals Test",
+        description: "Comprehensive Java programming assessment covering core concepts",
+        questionIds: allJavaQuestions.map((q) => q.id),
         duration: 60,
         difficulty: "mixed",
         isActive: true,
@@ -412,12 +353,12 @@ async function seed() {
       })
       .returning();
 
-    const [scienceTest] = await db
+    const [pythonTest] = await db
       .insert(tests)
       .values({
-        name: "Science Fundamentals Test",
-        description: "Comprehensive science assessment covering physics, chemistry, and biology concepts",
-        questionIds: allScienceQuestions.map((q) => q.id),
+        name: "Python Fundamentals Test",
+        description: "Comprehensive Python programming assessment covering core concepts",
+        questionIds: allPythonQuestions.map((q) => q.id),
         duration: 60,
         difficulty: "mixed",
         isActive: true,
@@ -425,33 +366,7 @@ async function seed() {
       })
       .returning();
 
-    const [englishTest] = await db
-      .insert(tests)
-      .values({
-        name: "English Language and Literature Test",
-        description: "Assessment covering language skills, literary analysis, and communication",
-        questionIds: allEnglishQuestions.map((q) => q.id),
-        duration: 60,
-        difficulty: "mixed",
-        isActive: true,
-        createdBy: admin.id,
-      })
-      .returning();
-
-    const [historyTest] = await db
-      .insert(tests)
-      .values({
-        name: "World History Test",
-        description: "Comprehensive history assessment covering major events, civilizations, and historical periods",
-        questionIds: allHistoryQuestions.map((q) => q.id),
-        duration: 60,
-        difficulty: "mixed",
-        isActive: true,
-        createdBy: admin.id,
-      })
-      .returning();
-
-    console.log(" Created Mathematics, Science, English, and History tests");
+    console.log("✅ Created Java and Python tests");
 
     console.log(`
 🎉 Seeding completed successfully!
@@ -459,20 +374,21 @@ async function seed() {
 📝 Admin Credentials:
    Username: admin
    Password: admin123
-   Email: admin@gmail.com
+   Email: admin@srishakthi.ac.in
 
 📝 Student Credentials:
    Total Students: ${studentUsers.length}
    All students have the same password: Siet@123
    Example logins:
+   - ramalingamm22ece / Siet@123
+   - gowthamg22cys / Siet@123
+   - kesavans22cys / Siet@123
    (Username is the part before @ in email)
 
 📊 Sample Data Created:
-   - ${allMathQuestions.length} Mathematics questions
-   - ${allScienceQuestions.length} Science questions
-   - ${allEnglishQuestions.length} English questions
-   - ${allHistoryQuestions.length} History questions
-   - 4 active tests (Mathematics, Science, English, History)
+   - ${allJavaQuestions.length} Java questions
+   - ${allPythonQuestions.length} Python questions
+   - 2 active tests (Java and Python)
 
 🚀 You can now log in and start using the application!
     `);
