@@ -1,7 +1,7 @@
 // Based on javascript_gemini blueprint
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "AIzaSyAa2XiD9LHxilGmd-P3Dx-uVnwd2b5wrkQ" });
 
 export interface InterviewEvaluation {
   grammar: number;
