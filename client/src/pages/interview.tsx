@@ -131,7 +131,7 @@ export default function Interview() {
     hasUserInteracted,
     enableAudio,
   } = useTextToSpeech({
-    apiKey: 'AIzaSyAVCOiKUG_YGATVqiFd1qklY83OLXX3YWk',
+    apiKey: 'AIzaSyAa2XiD9LHxilGmd-P3Dx-uVnwd2b5wrkQ',
     language: 'en-US',
     voiceName: 'en-US-Neural2-F',
     onError: (error) => {
