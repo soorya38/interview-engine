@@ -1,7 +1,6 @@
-// Based on javascript_gemini blueprint
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "AIzaSyAdUFqoIu-HFnL1fjsNpgAboLkW95pY-ek" });
+// Ollama integration for local LLM
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 
 export interface InterviewEvaluation {
   grammar: number;
@@ -68,45 +67,50 @@ Candidate's Answer: ${userAnswer}
 
 Please evaluate this answer and provide your feedback.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            grammar: { type: "number" },
-            technical: { type: "number" },
-            depth: { type: "number" },
-            communication: { type: "number" },
-            feedback: { type: "string" },
-            interviewer_text: { type: "string" },
-            strengths: { 
-              type: "array",
-              items: { type: "string" }
-            },
-            areasToImprove: { 
-              type: "array",
-              items: { type: "string" }
-            },
-            recommendations: { 
-              type: "array",
-              items: { type: "string" }
-            },
-          },
-          required: ["grammar", "technical", "depth", "communication", "feedback", "interviewer_text", "strengths", "areasToImprove", "recommendations"],
-        },
+    // Call Ollama API
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      contents: prompt,
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        format: "json",
+        stream: false,
+      }),
     });
 
-    const rawJson = response.text;
-    if (!rawJson) {
-      throw new Error("Empty response from AI");
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ollama API error: ${response.status} ${errorText}`);
     }
 
-    const evaluation: InterviewEvaluation = JSON.parse(rawJson);
+    const data = await response.json();
+    const rawJson = data.message?.content || data.response;
+    
+    if (!rawJson) {
+      throw new Error("Empty response from Ollama");
+    }
+
+    // Parse JSON response (handle cases where Ollama might wrap it in markdown code blocks)
+    let jsonString = rawJson.trim();
+    if (jsonString.startsWith("```json")) {
+      jsonString = jsonString.replace(/^```json\n?/, "").replace(/\n?```$/, "");
+    } else if (jsonString.startsWith("```")) {
+      jsonString = jsonString.replace(/^```\n?/, "").replace(/\n?```$/, "");
+    }
+
+    const evaluation: InterviewEvaluation = JSON.parse(jsonString);
     
     // Ensure scores are within 0-100 range
     evaluation.grammar = Math.max(0, Math.min(100, evaluation.grammar));
@@ -116,7 +120,7 @@ Please evaluate this answer and provide your feedback.`;
 
     return evaluation;
   } catch (error) {
-    console.error("Gemini AI error:", error);
+    console.error("Ollama AI error:", error);
     throw new Error(`Failed to conduct interview: ${error}`);
   }
 }
