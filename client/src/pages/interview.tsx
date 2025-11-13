@@ -109,13 +109,33 @@ export default function Interview() {
         return;
       }
       
-      // Check if transcript has more than 1 character
-      if (transcript.trim().length > 1) {
-        console.log("Auto-submitting speech transcript:", transcript);
-        // Auto-submit the transcript directly
-        submitAnswerMutation.mutate(transcript);
+      // Use the current answer state which includes both final transcript and interim transcript
+      // This ensures we capture all speech, even if there are gaps
+      // The answerRef is kept in sync by the useEffect that combines transcript + interimTranscript
+      const answerFromRef = answerRef.current.trim();
+      const answerFromTranscript = transcript.trim();
+      
+      // Prefer answerRef as it includes interim results, but use transcript param as fallback
+      // Use whichever is longer to ensure we capture all accumulated speech
+      let answerToSubmit = answerFromRef || answerFromTranscript;
+      if (answerFromRef && answerFromTranscript) {
+        // If both exist, use the longer one to ensure completeness
+        answerToSubmit = answerFromRef.length >= answerFromTranscript.length 
+          ? answerFromRef 
+          : answerFromTranscript;
+      }
+      
+      console.log("Answer from ref:", answerFromRef);
+      console.log("Answer from transcript param:", answerFromTranscript);
+      console.log("Using answer:", answerToSubmit);
+      
+      // Check if answer has more than 1 character
+      if (answerToSubmit.length > 1) {
+        console.log("Auto-submitting answer:", answerToSubmit);
+        // Auto-submit the complete answer (includes all accumulated speech)
+        submitAnswerMutation.mutate(answerToSubmit);
       } else {
-        console.log("Auto-submit skipped - Transcript too short (length:", transcript.trim().length, ")");
+        console.log("Auto-submit skipped - Answer too short (length:", answerToSubmit.length, ")");
       }
     },
     autoStart: false,
@@ -125,11 +145,12 @@ export default function Interview() {
   // Sync answer with transcript when listening (not in manual edit mode)
   // This ensures the displayed text shows the accumulated speech recognition results
   useEffect(() => {
-    if (isListening && !isManualEdit) {
+    if (!isManualEdit) {
       // Use the accumulated transcript from the hook plus any interim transcript
       const fullTranscript = transcript + (interimTranscript || '');
       // Update the answer to show the accumulated speech
       // The hook's transcript state already accumulates, preventing overwrites on gaps
+      // We sync even when not listening to ensure auto-submit has the complete answer
       setAnswer(fullTranscript);
     }
   }, [isListening, transcript, interimTranscript, isManualEdit]);
