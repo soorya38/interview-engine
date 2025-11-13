@@ -366,10 +366,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedSessions.map(async (session) => {
           const test = await storage.getTest(session.testId);
           const score = await storage.getScore(session.id);
+          const turns = await storage.getSessionTurns(session.id);
+          
           return {
             ...session,
             testName: test?.name,
             score,
+            questionCount: turns.length,
+            totalQuestions: session.questionIds.length,
           };
         })
       );
@@ -439,21 +443,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save turn
       const turnNumber = session.currentQuestionIndex;
+      // Ensure aiResponse is not null or empty
+      const aiResponse = evaluation.interviewer_text?.trim() || evaluation.feedback?.trim() || "Thank you for your answer.";
+      
+      // Ensure arrays are properly set (not null/undefined)
+      const strengths = Array.isArray(evaluation.strengths) ? evaluation.strengths : [];
+      const areasToImprove = Array.isArray(evaluation.areasToImprove) ? evaluation.areasToImprove : [];
+      const recommendations = Array.isArray(evaluation.recommendations) ? evaluation.recommendations : [];
+      
+      console.log("Saving turn with strengths:", strengths);
+      
       const turn = await storage.createTurn({
         sessionId: session.id,
         questionId: currentQuestion.id,
         turnNumber,
         userAnswer: answer,
-        aiResponse: evaluation.interviewer_text,
+        aiResponse: aiResponse,
         evaluation: {
           grammar: evaluation.grammar,
           technical: evaluation.technical,
           depth: evaluation.depth,
           communication: evaluation.communication,
           feedback: evaluation.feedback,
-          strengths: evaluation.strengths,
-          areasToImprove: evaluation.areasToImprove,
-          recommendations: evaluation.recommendations,
+          strengths: strengths,
+          areasToImprove: areasToImprove,
+          recommendations: recommendations,
         },
       });
 
@@ -552,6 +566,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(score);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sessions/:id/turns", authMiddleware, async (req, res) => {
+    try {
+      const sessionId = req.params.id;
+      const session = await storage.getSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      if (session.userId !== req.user!.userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const turns = await storage.getSessionTurns(sessionId);
+      
+      // Fetch question details for each turn
+      const turnsWithQuestions = await Promise.all(
+        turns.map(async (turn) => {
+          const question = await storage.getQuestion(turn.questionId);
+          return {
+            ...turn,
+            question: question ? {
+              id: question.id,
+              questionText: question.questionText,
+              difficulty: question.difficulty,
+            } : null,
+          };
+        })
+      );
+
+      res.json(turnsWithQuestions);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

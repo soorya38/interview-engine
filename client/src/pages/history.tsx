@@ -1,15 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, ArrowRight, Award } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Award, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Score, InterviewSession } from "@shared/schema";
 import { Link } from "wouter";
 
+type HistorySession = InterviewSession & {
+  score?: Score;
+  testName?: string;
+  questionCount?: number;
+  totalQuestions?: number;
+};
+
 export default function History() {
-  const { data: sessions, isLoading } = useQuery<
-    (InterviewSession & { score?: Score; topicName?: string })[]
-  >({
+  const { data: sessions, isLoading } = useQuery<HistorySession[]>({
     queryKey: ["/api/sessions/history"],
   });
 
@@ -44,8 +49,8 @@ export default function History() {
                       <BookOpen className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{session.topicName || "Test"}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <h3 className="font-semibold text-lg mb-1">{session.testName || "Test"}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
                           {new Date(session.startedAt).toLocaleDateString("en-US", {
@@ -64,6 +69,17 @@ export default function History() {
                                 minute: "2-digit",
                               })}
                             </span>
+                          </div>
+                        )}
+                        {session.questionCount !== undefined && session.totalQuestions !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span>
+                                {session.questionCount} of {session.totalQuestions} questions answered
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>

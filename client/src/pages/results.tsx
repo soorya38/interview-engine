@@ -6,16 +6,37 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, TrendingUp, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
-import type { Score } from "@shared/schema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Award, TrendingUp, ArrowRight, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react";
+import type { Score, InterviewTurn } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+
+type TurnWithQuestion = InterviewTurn & {
+  question: {
+    id: string;
+    questionText: string;
+    difficulty: string;
+  } | null;
+};
 
 export default function Results() {
   const { sessionId } = useParams();
   const [, setLocation] = useLocation();
 
-  const { data: score, isLoading } = useQuery<Score>({
+  const { data: score, isLoading: isScoreLoading } = useQuery<Score>({
     queryKey: ["/api/sessions", sessionId, "score"],
   });
+
+  const { data: turns, isLoading: isTurnsLoading } = useQuery<TurnWithQuestion[]>({
+    queryKey: ["/api/sessions", sessionId, "turns"],
+    queryFn: async () => {
+      const data = await apiRequest("GET", `/api/sessions/${sessionId}/turns`);
+      return data;
+    },
+    enabled: !!sessionId,
+  });
+
+  const isLoading = isScoreLoading || isTurnsLoading;
 
   if (isLoading) {
     return (
@@ -149,6 +170,158 @@ export default function Results() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Questions and Answers Section */}
+      {turns && turns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Questions & Answers
+            </CardTitle>
+            <CardDescription>
+              Review your answers and scores for each question
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              {turns.map((turn, index) => {
+                const evalData = turn.evaluation;
+                const questionNumber = index + 1;
+                const totalScore = evalData
+                  ? Math.round(
+                      evalData.technical * 0.5 +
+                      evalData.communication * 0.2 +
+                      evalData.depth * 0.15 +
+                      evalData.grammar * 0.15
+                    )
+                  : 0;
+
+                return (
+                  <AccordionItem key={turn.id} value={`question-${turn.id}`}>
+                    <AccordionTrigger className="text-left">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Question {questionNumber}</span>
+                          {turn.question && (
+                            <Badge variant="outline">{turn.question.difficulty}</Badge>
+                          )}
+                        </div>
+                        {evalData && (
+                          <div className="flex items-center gap-4 ml-auto mr-4">
+                            <span className="text-sm text-muted-foreground">Score:</span>
+                            <span className="font-bold text-lg">{totalScore}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      {turn.question && (
+                        <div>
+                          <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Question:</h4>
+                          <p className="text-base leading-relaxed">{turn.question.questionText}</p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Your Answer:</h4>
+                        <p className="text-base leading-relaxed bg-muted/50 p-4 rounded-lg">
+                          {turn.userAnswer}
+                        </p>
+                      </div>
+
+                      {evalData && (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Grammar</div>
+                              <div className="text-lg font-semibold">{evalData.grammar || 0}%</div>
+                              <Progress value={evalData.grammar || 0} className="h-2 mt-1" />
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Technical</div>
+                              <div className="text-lg font-semibold">{evalData.technical || 0}%</div>
+                              <Progress value={evalData.technical || 0} className="h-2 mt-1" />
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Depth</div>
+                              <div className="text-lg font-semibold">{evalData.depth || 0}%</div>
+                              <Progress value={evalData.depth || 0} className="h-2 mt-1" />
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Communication</div>
+                              <div className="text-lg font-semibold">{evalData.communication || 0}%</div>
+                              <Progress value={evalData.communication || 0} className="h-2 mt-1" />
+                            </div>
+                          </div>
+
+                          {evalData.feedback && (
+                            <div className="pt-2">
+                              <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Feedback:</h4>
+                              <p className="text-sm leading-relaxed">{evalData.feedback}</p>
+                            </div>
+                          )}
+
+                          {Array.isArray(evalData.strengths) && evalData.strengths.length > 0 && (
+                            <div className="pt-2">
+                              <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-success" />
+                                Strengths:
+                              </h4>
+                              <ul className="space-y-1">
+                                {evalData.strengths.map((strength, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-success mt-2 flex-shrink-0" />
+                                    <span>{strength}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {Array.isArray(evalData.areasToImprove) && evalData.areasToImprove.length > 0 && (
+                            <div className="pt-2">
+                              <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-warning" />
+                                Areas to Improve:
+                              </h4>
+                              <ul className="space-y-1">
+                                {evalData.areasToImprove.map((area, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-warning mt-2 flex-shrink-0" />
+                                    <span>{area}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {Array.isArray(evalData.recommendations) && evalData.recommendations.length > 0 && (
+                            <div className="pt-2">
+                              <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-primary" />
+                                Recommendations:
+                              </h4>
+                              <ul className="space-y-1">
+                                {evalData.recommendations.map((rec, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                                    <span>{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
 
       {score.detailedFeedback && (
         <Tabs defaultValue="strengths" className="w-full">

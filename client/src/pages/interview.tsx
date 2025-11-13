@@ -145,12 +145,12 @@ export default function Interview() {
   // Sync answer with transcript when listening (not in manual edit mode)
   // This ensures the displayed text shows the accumulated speech recognition results
   useEffect(() => {
-    if (!isManualEdit) {
+    if (isListening && !isManualEdit) {
       // Use the accumulated transcript from the hook plus any interim transcript
       const fullTranscript = transcript + (interimTranscript || '');
       // Update the answer to show the accumulated speech
       // The hook's transcript state already accumulates, preventing overwrites on gaps
-      // We sync even when not listening to ensure auto-submit has the complete answer
+      // Only sync when actively listening to avoid overwriting manual edits
       setAnswer(fullTranscript);
     }
   }, [isListening, transcript, interimTranscript, isManualEdit]);
@@ -529,8 +529,6 @@ export default function Interview() {
                 placeholder={
                   isSpeaking 
                     ? "Question is being read... Please wait..." 
-                    : !isListening 
-                    ? "Waiting for microphone to start... Please wait..." 
                     : "Type your answer here or use voice input..."
                 }
                 className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${
@@ -538,9 +536,9 @@ export default function Interview() {
                 } ${
                   isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
                 } ${
-                  (isSpeaking || !isListening) ? 'opacity-60 cursor-not-allowed' : ''
+                  isSpeaking ? 'opacity-60 cursor-not-allowed' : ''
                 }`}
-                disabled={submitAnswerMutation.isPending || isSpeaking || !isListening}
+                disabled={submitAnswerMutation.isPending || isSpeaking}
                 data-testid="textarea-answer"
               />
             </div>

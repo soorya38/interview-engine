@@ -1,6 +1,6 @@
 // Ollama integration for local LLM
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen2.5:7b-instruct";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:latest";
 
 export interface InterviewEvaluation {
   grammar: number;
@@ -110,13 +110,33 @@ Please evaluate this answer and provide your feedback.`;
       jsonString = jsonString.replace(/^```\n?/, "").replace(/\n?```$/, "");
     }
 
-    const evaluation: InterviewEvaluation = JSON.parse(jsonString);
+    let evaluation: InterviewEvaluation;
+    try {
+      evaluation = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("Failed to parse JSON response:", jsonString);
+      throw new Error(`Invalid JSON response from Ollama: ${parseError}`);
+    }
     
     // Ensure scores are within 0-100 range
-    evaluation.grammar = Math.max(0, Math.min(100, evaluation.grammar));
-    evaluation.technical = Math.max(0, Math.min(100, evaluation.technical));
-    evaluation.depth = Math.max(0, Math.min(100, evaluation.depth));
-    evaluation.communication = Math.max(0, Math.min(100, evaluation.communication));
+    evaluation.grammar = Math.max(0, Math.min(100, evaluation.grammar || 0));
+    evaluation.technical = Math.max(0, Math.min(100, evaluation.technical || 0));
+    evaluation.depth = Math.max(0, Math.min(100, evaluation.depth || 0));
+    evaluation.communication = Math.max(0, Math.min(100, evaluation.communication || 0));
+
+    // Ensure required fields have default values if missing
+    evaluation.feedback = evaluation.feedback || "Thank you for your answer.";
+    evaluation.interviewer_text = evaluation.interviewer_text || evaluation.feedback || "Thank you for your answer. Let's move on to the next question.";
+    
+    // Ensure arrays exist and are arrays (preserve existing values)
+    evaluation.strengths = Array.isArray(evaluation.strengths) ? evaluation.strengths : [];
+    evaluation.areasToImprove = Array.isArray(evaluation.areasToImprove) ? evaluation.areasToImprove : [];
+    evaluation.recommendations = Array.isArray(evaluation.recommendations) ? evaluation.recommendations : [];
+
+    // Log for debugging
+    console.log("Evaluation parsed - strengths:", evaluation.strengths);
+    console.log("Evaluation parsed - areasToImprove:", evaluation.areasToImprove);
+    console.log("Evaluation parsed - recommendations:", evaluation.recommendations);
 
     return evaluation;
   } catch (error) {
