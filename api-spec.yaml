@@ -1,0 +1,1807 @@
+openapi: 3.0.3
+info:
+  title: FreelanceFlow Interview Platform API
+  description: |
+    API specification for the FreelanceFlow mock interview platform.
+    This platform allows students to take mock technical interviews with AI-powered evaluation.
+    Admins and instructors can manage content and view student analytics.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@freelanceflow.com
+
+servers:
+  - url: http://localhost:5173/api
+    description: Development server
+  - url: https://api.freelanceflow.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and registration
+  - name: Topic Categories
+    description: Manage topic categories for organizing questions
+  - name: Tests
+    description: Manage tests (collections of questions)
+  - name: Questions
+    description: Manage questions in the question bank
+  - name: Users
+    description: User management (admin only)
+  - name: Sessions
+    description: Interview session management
+  - name: Stats
+    description: Statistics and analytics
+  - name: Profile
+    description: User profile management
+  - name: Admin
+    description: Admin-only endpoints for student data and analytics
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login/register endpoints
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+      required:
+        - error
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 3
+        role:
+          type: string
+          enum: [user, admin, instructor]
+          default: user
+        fullName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        profileData:
+          type: object
+          properties:
+            bio:
+              type: string
+            skills:
+              type: array
+              items:
+                type: string
+            experience:
+              type: string
+            education:
+              type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - username
+        - role
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT authentication token
+      required:
+        - user
+        - token
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+        - username
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: string
+          enum: [user, admin, instructor]
+          default: user
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        profileData:
+          type: object
+          properties:
+            bio:
+              type: string
+            skills:
+              type: array
+              items:
+                type: string
+            experience:
+              type: string
+            education:
+              type: string
+      required:
+        - username
+        - password
+
+    TopicCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        iconName:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        questionCount:
+          type: integer
+          description: Number of questions in this category
+      required:
+        - id
+        - name
+        - createdAt
+
+    TopicCategoryCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        iconName:
+          type: string
+      required:
+        - name
+
+    Test:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        questionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          default: []
+        duration:
+          type: integer
+          nullable: true
+          description: Duration in minutes
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          nullable: true
+        isActive:
+          type: boolean
+          default: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        questionCount:
+          type: integer
+          description: Number of questions in this test
+      required:
+        - id
+        - name
+        - questionIds
+        - isActive
+        - createdAt
+
+    TestCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        questionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        duration:
+          type: integer
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        isActive:
+          type: boolean
+      required:
+        - name
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        topicCategoryId:
+          type: string
+          format: uuid
+        questionText:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        expectedKeyPoints:
+          type: array
+          items:
+            type: string
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        topicCategoryName:
+          type: string
+          nullable: true
+          description: Name of the topic category
+      required:
+        - id
+        - topicCategoryId
+        - questionText
+        - difficulty
+        - createdAt
+
+    QuestionCreate:
+      type: object
+      properties:
+        topicCategoryId:
+          type: string
+          format: uuid
+        questionText:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        expectedKeyPoints:
+          type: array
+          items:
+            type: string
+      required:
+        - topicCategoryId
+        - questionText
+        - difficulty
+
+    InterviewSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        testId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+          default: in_progress
+        currentQuestionIndex:
+          type: integer
+          default: 0
+        questionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        currentQuestion:
+          $ref: '#/components/schemas/Question'
+        turns:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewTurn'
+        totalQuestions:
+          type: integer
+      required:
+        - id
+        - userId
+        - testId
+        - status
+        - currentQuestionIndex
+        - questionIds
+        - startedAt
+
+    InterviewTurn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+        turnNumber:
+          type: integer
+        userAnswer:
+          type: string
+        aiResponse:
+          type: string
+        evaluation:
+          $ref: '#/components/schemas/Evaluation'
+        createdAt:
+          type: string
+          format: date-time
+        question:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            questionText:
+              type: string
+            difficulty:
+              type: string
+          nullable: true
+      required:
+        - id
+        - sessionId
+        - questionId
+        - turnNumber
+        - userAnswer
+        - aiResponse
+        - createdAt
+
+    Evaluation:
+      type: object
+      properties:
+        grammar:
+          type: integer
+          minimum: 0
+          maximum: 100
+        technical:
+          type: integer
+          minimum: 0
+          maximum: 100
+        depth:
+          type: integer
+          minimum: 0
+          maximum: 100
+        communication:
+          type: integer
+          minimum: 0
+          maximum: 100
+        feedback:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        areasToImprove:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+      required:
+        - grammar
+        - technical
+        - depth
+        - communication
+        - feedback
+
+    Score:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        grammarScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        technicalScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        depthScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        communicationScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        totalScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        grade:
+          type: string
+          enum: [A, B, C, D, F]
+          nullable: true
+        detailedFeedback:
+          type: object
+          properties:
+            strengths:
+              type: array
+              items:
+                type: string
+            improvements:
+              type: array
+              items:
+                type: string
+            recommendations:
+              type: array
+              items:
+                type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sessionId
+        - userId
+        - grammarScore
+        - technicalScore
+        - depthScore
+        - communicationScore
+        - totalScore
+        - createdAt
+
+    SessionStartRequest:
+      type: object
+      properties:
+        testId:
+          type: string
+          format: uuid
+      required:
+        - testId
+
+    SessionStartResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/InterviewSession'
+        currentQuestion:
+          $ref: '#/components/schemas/Question'
+      required:
+        - session
+        - currentQuestion
+
+    AnswerRequest:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        answer:
+          type: string
+          minLength: 1
+      required:
+        - sessionId
+        - answer
+
+    AnswerResponse:
+      type: object
+      properties:
+        turn:
+          $ref: '#/components/schemas/InterviewTurn'
+        completed:
+          type: boolean
+        nextQuestion:
+          $ref: '#/components/schemas/Question'
+          nullable: true
+        score:
+          $ref: '#/components/schemas/Score'
+          nullable: true
+      required:
+        - turn
+        - completed
+
+    UserStats:
+      type: object
+      properties:
+        totalTests:
+          type: integer
+        averageScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        improvement:
+          type: integer
+          description: Percentage improvement compared to previous tests
+      required:
+        - totalTests
+        - averageScore
+        - improvement
+
+    ProfileStats:
+      type: object
+      properties:
+        totalTests:
+          type: integer
+        averageScore:
+          type: integer
+        recentScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Score'
+        topSkills:
+          type: array
+          items:
+            type: string
+      required:
+        - totalTests
+        - averageScore
+        - recentScores
+        - topSkills
+
+    ProfileUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        profileData:
+          type: object
+          properties:
+            bio:
+              type: string
+            skills:
+              type: array
+              items:
+                type: string
+            experience:
+              type: string
+            education:
+              type: string
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalTopicCategories:
+          type: integer
+        totalQuestions:
+          type: integer
+        totalSessions:
+          type: integer
+      required:
+        - totalUsers
+        - totalTopicCategories
+        - totalQuestions
+        - totalSessions
+
+    StudentSession:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/InterviewSession'
+        - type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                username:
+                  type: string
+                fullName:
+                  type: string
+                  nullable: true
+                email:
+                  type: string
+                  nullable: true
+            testName:
+              type: string
+              nullable: true
+            score:
+              $ref: '#/components/schemas/Score'
+              nullable: true
+            questionCount:
+              type: integer
+            totalQuestions:
+              type: integer
+
+    StudentSessionDetail:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/InterviewSession'
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            fullName:
+              type: string
+              nullable: true
+            email:
+              type: string
+              nullable: true
+          nullable: true
+        test:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          nullable: true
+        score:
+          $ref: '#/components/schemas/Score'
+          nullable: true
+        turns:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewTurn'
+      required:
+        - session
+        - turns
+
+    Analytics:
+      type: object
+      properties:
+        totalSessions:
+          type: integer
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        averageScores:
+          type: object
+          properties:
+            grammar:
+              type: integer
+            technical:
+              type: integer
+            depth:
+              type: integer
+            communication:
+              type: integer
+            total:
+              type: integer
+        gradeDistribution:
+          type: object
+          properties:
+            A:
+              type: integer
+            B:
+              type: integer
+            C:
+              type: integer
+            D:
+              type: integer
+            F:
+              type: integer
+        sessionsByDay:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Number of sessions completed per day (last 30 days)
+      required:
+        - totalSessions
+        - totalUsers
+        - activeUsers
+        - averageScores
+        - gradeDistribution
+        - sessionsByDay
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account and returns authentication token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad request (validation error or username taken)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticates user and returns JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /topic-categories:
+    get:
+      tags:
+        - Topic Categories
+      summary: Get all topic categories
+      description: Returns all topic categories created by admins/instructors
+      responses:
+        '200':
+          description: List of topic categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicCategory'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Topic Categories
+      summary: Create a topic category
+      description: Creates a new topic category (admin/instructor only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicCategoryCreate'
+      responses:
+        '200':
+          description: Topic category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicCategory'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /topic-categories/{id}:
+    put:
+      tags:
+        - Topic Categories
+      summary: Update a topic category
+      description: Updates an existing topic category (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicCategoryCreate'
+      responses:
+        '200':
+          description: Topic category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicCategory'
+        '404':
+          description: Topic category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Topic Categories
+      summary: Delete a topic category
+      description: Deletes a topic category (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Topic category deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests:
+    get:
+      tags:
+        - Tests
+      summary: Get all tests
+      description: Returns all tests created by admins/instructors
+      responses:
+        '200':
+          description: List of tests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Test'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Tests
+      summary: Create a test
+      description: Creates a new test (admin/instructor only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestCreate'
+      responses:
+        '200':
+          description: Test created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests/{id}:
+    put:
+      tags:
+        - Tests
+      summary: Update a test
+      description: Updates an existing test (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestCreate'
+      responses:
+        '200':
+          description: Test updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Tests
+      summary: Delete a test
+      description: Deletes a test (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Test deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /questions:
+    get:
+      tags:
+        - Questions
+      summary: Get all questions
+      description: Returns all questions in the question bank
+      responses:
+        '200':
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Questions
+      summary: Create a question
+      description: Creates a new question (admin/instructor only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreate'
+      responses:
+        '200':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /questions/{id}:
+    put:
+      tags:
+        - Questions
+      summary: Update a question
+      description: Updates an existing question (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreate'
+      responses:
+        '200':
+          description: Question updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Questions
+      summary: Delete a question
+      description: Deletes a question (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Question deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Returns all users in the system (admin/instructor only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/start:
+    post:
+      tags:
+        - Sessions
+      summary: Start a new interview session
+      description: Creates a new interview session for a test
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionStartRequest'
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStartResponse'
+        '400':
+          description: Bad request (test not found or no questions)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/recent:
+    get:
+      tags:
+        - Sessions
+      summary: Get recent sessions
+      description: Returns the 5 most recent completed sessions for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of recent sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/InterviewSession'
+                    - type: object
+                      properties:
+                        testName:
+                          type: string
+                          nullable: true
+                        score:
+                          $ref: '#/components/schemas/Score'
+                          nullable: true
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/history:
+    get:
+      tags:
+        - Sessions
+      summary: Get session history
+      description: Returns all completed sessions for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of completed sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/InterviewSession'
+                    - type: object
+                      properties:
+                        testName:
+                          type: string
+                          nullable: true
+                        score:
+                          $ref: '#/components/schemas/Score'
+                          nullable: true
+                        questionCount:
+                          type: integer
+                        totalQuestions:
+                          type: integer
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/{id}:
+    get:
+      tags:
+        - Sessions
+      summary: Get session details
+      description: Returns detailed information about a specific session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewSession'
+        '403':
+          description: Forbidden - Session belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/answer:
+    post:
+      tags:
+        - Sessions
+      summary: Submit an answer
+      description: Submits an answer for the current question in a session. AI evaluates the answer and returns feedback.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerRequest'
+      responses:
+        '200':
+          description: Answer submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerResponse'
+        '400':
+          description: Bad request (question not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Session belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error (AI evaluation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/{id}/score:
+    get:
+      tags:
+        - Sessions
+      summary: Get session score
+      description: Returns the final score for a completed session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Score details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Score'
+        '404':
+          description: Score not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/{id}/turns:
+    get:
+      tags:
+        - Sessions
+      summary: Get session turns
+      description: Returns all turns (questions and answers) for a session with question details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of turns with question details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InterviewTurn'
+        '403':
+          description: Forbidden - Session belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/{id}/quit:
+    post:
+      tags:
+        - Sessions
+      summary: Quit a session
+      description: Marks an in-progress session as abandoned
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session quit successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request (session already ended)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Session belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /stats:
+    get:
+      tags:
+        - Stats
+      summary: Get user statistics
+      description: Returns statistics for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /profile/stats:
+    get:
+      tags:
+        - Stats
+      summary: Get profile statistics
+      description: Returns detailed statistics for the current user's profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileStats'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /profile:
+    get:
+      tags:
+        - Profile
+      summary: Get user profile
+      description: Returns the current user's profile information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Profile
+      summary: Update user profile
+      description: Updates the current user's profile information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/stats:
+    get:
+      tags:
+        - Admin
+      summary: Get admin statistics
+      description: Returns platform-wide statistics (admin/instructor only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admin statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStats'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/student-sessions:
+    get:
+      tags:
+        - Admin
+      summary: Get all student sessions
+      description: Returns all completed student test sessions with user and test details (admin/instructor only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of student sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentSession'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/student-sessions/{sessionId}:
+    get:
+      tags:
+        - Admin
+      summary: Get student session details
+      description: Returns detailed information about a specific student session including all answers (admin/instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Student session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentSessionDetail'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/analytics:
+    get:
+      tags:
+        - Admin
+      summary: Get platform analytics
+      description: Returns comprehensive platform analytics including scores, grade distribution, and activity trends (admin/instructor only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Platform analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analytics'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
