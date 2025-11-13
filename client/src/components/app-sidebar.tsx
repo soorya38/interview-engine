@@ -1,4 +1,4 @@
-import { Home, BookOpen, FileQuestion, Users, BarChart3, User, LogOut, History, Tag } from "lucide-react";
+import { Home, BookOpen, FileQuestion, Users, BarChart3, User, LogOut, History, Tag, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -67,11 +67,16 @@ export function AppSidebar() {
       url: "/admin/users",
       icon: Users,
     },
-    // {
-    //   title: "Analytics",
-    //   url: "/admin/analytics",
-    //   icon: BarChart3,
-    // },
+    {
+      title: "Student Answers",
+      url: "/admin/student-answers",
+      icon: MessageSquare,
+    },
+    {
+      title: "Analytics",
+      url: "/admin/analytics",
+      icon: BarChart3,
+    },
   ];
 
   const items = user?.role === "admin" || user?.role === "instructor" ? adminItems : userItems;

@@ -22,6 +22,8 @@ import AdminTopics from "@/pages/admin/topics";
 import AdminTopicCategories from "@/pages/admin/topic-categories";
 import AdminQuestions from "@/pages/admin/questions";
 import AdminUsers from "@/pages/admin/users";
+import StudentAnswers, { StudentAnswerDetail } from "@/pages/admin/student-answers";
+import Analytics from "@/pages/admin/analytics";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType; adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -124,6 +126,15 @@ function Router() {
       </Route>
       <Route path="/admin/users">
         {() => <ProtectedRoute component={AdminUsers} adminOnly />}
+      </Route>
+      <Route path="/admin/student-answers">
+        {() => <ProtectedRoute component={StudentAnswers} adminOnly />}
+      </Route>
+      <Route path="/admin/student-answers/:sessionId">
+        {() => <ProtectedRoute component={StudentAnswerDetail} adminOnly />}
+      </Route>
+      <Route path="/admin/analytics">
+        {() => <ProtectedRoute component={Analytics} adminOnly />}
       </Route>
       <Route path="/">
         {() => <RootRedirect />}

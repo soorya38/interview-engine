@@ -712,6 +712,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for viewing student data
+  app.get("/api/admin/student-sessions", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const allSessions = [];
+      
+      // Get all completed sessions with user and test details
+      for (const user of allUsers) {
+        const sessions = await storage.getUserSessions(user.id);
+        const completedSessions = sessions.filter(s => s.status === "completed");
+        
+        for (const session of completedSessions) {
+          const test = await storage.getTest(session.testId);
+          const score = await storage.getScore(session.id);
+          const turns = await storage.getSessionTurns(session.id);
+          
+          allSessions.push({
+            ...session,
+            user: {
+              id: user.id,
+              username: user.username,
+              fullName: user.fullName,
+              email: user.email,
+            },
+            testName: test?.name,
+            score,
+            questionCount: turns.length,
+            totalQuestions: session.questionIds.length,
+          });
+        }
+      }
+      
+      // Sort by most recent first
+      allSessions.sort((a, b) => 
+        new Date(b.completedAt || b.startedAt).getTime() - 
+        new Date(a.completedAt || a.startedAt).getTime()
+      );
+      
+      res.json(allSessions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/student-sessions/:sessionId", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const sessionId = req.params.sessionId;
+      const session = await storage.getSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const user = await storage.getUser(session.userId);
+      const test = await storage.getTest(session.testId);
+      const score = await storage.getScore(sessionId);
+      const turns = await storage.getSessionTurns(sessionId);
+      
+      // Fetch question details for each turn
+      const turnsWithQuestions = await Promise.all(
+        turns.map(async (turn) => {
+          const question = await storage.getQuestion(turn.questionId);
+          return {
+            ...turn,
+            question: question ? {
+              id: question.id,
+              questionText: question.questionText,
+              difficulty: question.difficulty,
+            } : null,
+          };
+        })
+      );
+
+      res.json({
+        session,
+        user: user ? {
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email,
+        } : null,
+        test: test ? {
+          id: test.id,
+          name: test.name,
+          description: test.description,
+        } : null,
+        score,
+        turns: turnsWithQuestions,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/analytics", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const allSessions = [];
+      const allScores = [];
+      
+      // Collect all sessions and scores
+      for (const user of allUsers) {
+        const sessions = await storage.getUserSessions(user.id);
+        const scores = await storage.getUserScores(user.id);
+        
+        allSessions.push(...sessions.filter(s => s.status === "completed"));
+        allScores.push(...scores);
+      }
+      
+      // Calculate analytics
+      const totalSessions = allSessions.length;
+      const totalUsers = allUsers.length;
+      const activeUsers = new Set(allSessions.map(s => s.userId)).size;
+      
+      // Average scores
+      const avgGrammar = allScores.length > 0
+        ? Math.round(allScores.reduce((sum, s) => sum + s.grammarScore, 0) / allScores.length)
+        : 0;
+      const avgTechnical = allScores.length > 0
+        ? Math.round(allScores.reduce((sum, s) => sum + s.technicalScore, 0) / allScores.length)
+        : 0;
+      const avgDepth = allScores.length > 0
+        ? Math.round(allScores.reduce((sum, s) => sum + s.depthScore, 0) / allScores.length)
+        : 0;
+      const avgCommunication = allScores.length > 0
+        ? Math.round(allScores.reduce((sum, s) => sum + s.communicationScore, 0) / allScores.length)
+        : 0;
+      const avgTotal = allScores.length > 0
+        ? Math.round(allScores.reduce((sum, s) => sum + s.totalScore, 0) / allScores.length)
+        : 0;
+      
+      // Grade distribution
+      const gradeDistribution = {
+        A: allScores.filter(s => s.grade === "A").length,
+        B: allScores.filter(s => s.grade === "B").length,
+        C: allScores.filter(s => s.grade === "C").length,
+        D: allScores.filter(s => s.grade === "D").length,
+        F: allScores.filter(s => s.grade === "F").length,
+      };
+      
+      // Sessions per day (last 30 days)
+      const sessionsByDay: Record<string, number> = {};
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      allSessions.forEach(session => {
+        const date = new Date(session.completedAt || session.startedAt);
+        if (date >= thirtyDaysAgo) {
+          const dateKey = date.toISOString().split('T')[0];
+          sessionsByDay[dateKey] = (sessionsByDay[dateKey] || 0) + 1;
+        }
+      });
+      
+      res.json({
+        totalSessions,
+        totalUsers,
+        activeUsers,
+        averageScores: {
+          grammar: avgGrammar,
+          technical: avgTechnical,
+          depth: avgDepth,
+          communication: avgCommunication,
+          total: avgTotal,
+        },
+        gradeDistribution,
+        sessionsByDay,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Profile routes
   app.get("/api/profile", authMiddleware, async (req, res) => {
     try {

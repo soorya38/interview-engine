@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, BookOpen, FileQuestion, TrendingUp } from "lucide-react";
+import { Users, BookOpen, FileQuestion, TrendingUp, MessageSquare, BarChart3 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery<{
@@ -142,6 +142,30 @@ export default function AdminDashboard() {
                 <div>
                   <p className="font-medium">Manage Users</p>
                   <p className="text-sm text-muted-foreground">View and manage user accounts</p>
+                </div>
+              </div>
+            </a>
+            <a
+              href="/admin/student-answers"
+              className="block p-3 rounded-lg border border-border hover-elevate active-elevate-2"
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Student Answers</p>
+                  <p className="text-sm text-muted-foreground">View all student test submissions</p>
+                </div>
+              </div>
+            </a>
+            <a
+              href="/admin/analytics"
+              className="block p-3 rounded-lg border border-border hover-elevate active-elevate-2"
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Analytics</p>
+                  <p className="text-sm text-muted-foreground">View platform statistics and trends</p>
                 </div>
               </div>
             </a>
