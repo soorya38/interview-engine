@@ -172,6 +172,13 @@ export default function Interview() {
   // Auto-read question when it changes
   useEffect(() => {
     if (session?.currentQuestion?.questionText) {
+      // Reset answer when new question loads
+      setAnswer("");
+      setIsManualEdit(false);
+      // Stop any ongoing speech recognition
+      if (isListening) {
+        handleStopListening();
+      }
       // Always try to read the question automatically
       // The speak function will handle user interaction requirements
       speak(session.currentQuestion.questionText);
@@ -483,13 +490,21 @@ export default function Interview() {
                 value={answer}
                 onChange={handleAnswerChange}
                 onFocus={handleManualEdit}
-                placeholder="Type your answer here or use voice input..."
+                placeholder={
+                  isSpeaking 
+                    ? "Question is being read... Please wait..." 
+                    : !isListening 
+                    ? "Waiting for microphone to start... Please wait..." 
+                    : "Type your answer here or use voice input..."
+                }
                 className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${
                   isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
                 } ${
                   isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
+                } ${
+                  (isSpeaking || !isListening) ? 'opacity-60 cursor-not-allowed' : ''
                 }`}
-                disabled={submitAnswerMutation.isPending}
+                disabled={submitAnswerMutation.isPending || isSpeaking || !isListening}
                 data-testid="textarea-answer"
               />
             </div>
