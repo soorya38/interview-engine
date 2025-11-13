@@ -83,10 +83,11 @@ export default function Interview() {
     countdown
   } = useSpeechToText({
     onResult: (text) => {
-      // Update the answer with the current speech result
-      // This will show what's being said in the textarea
-      setAnswer(text);
+      // The hook's transcript state already accumulates the speech results
+      // The useEffect below will sync the answer with the accumulated transcript
+      // This prevents overwriting when there are gaps in speech
       console.log("Speech result received:", text);
+      console.log("Accumulated transcript will be synced via useEffect");
     },
     onError: (error) => {
       toast({
@@ -120,6 +121,18 @@ export default function Interview() {
     autoStart: false,
     silenceTimeout: 4000
   });
+
+  // Sync answer with transcript when listening (not in manual edit mode)
+  // This ensures the displayed text shows the accumulated speech recognition results
+  useEffect(() => {
+    if (isListening && !isManualEdit) {
+      // Use the accumulated transcript from the hook plus any interim transcript
+      const fullTranscript = transcript + (interimTranscript || '');
+      // Update the answer to show the accumulated speech
+      // The hook's transcript state already accumulates, preventing overwrites on gaps
+      setAnswer(fullTranscript);
+    }
+  }, [isListening, transcript, interimTranscript, isManualEdit]);
 
   // Text-to-speech functionality
   const {
@@ -172,9 +185,10 @@ export default function Interview() {
   // Auto-read question when it changes
   useEffect(() => {
     if (session?.currentQuestion?.questionText) {
-      // Reset answer when new question loads
+      // Reset answer and transcript when new question loads
       setAnswer("");
       setIsManualEdit(false);
+      resetTranscript(); // Reset the accumulated transcript in the hook
       // Stop any ongoing speech recognition
       if (isListening) {
         handleStopListening();
@@ -326,9 +340,10 @@ export default function Interview() {
       return;
     }
     
-    // Clear the answer field when starting new speech session
+    // Clear the answer field and reset transcript when starting new speech session
     setAnswer("");
     setIsManualEdit(false);
+    resetTranscript(); // Reset the accumulated transcript in the hook
     
     console.log("Starting speech recognition...");
     startListening();
