@@ -62,28 +62,28 @@ export default function AdminQuestions() {
   // Filter questions based on search query, topic, and difficulty
   const filteredQuestions = useMemo(() => {
     if (!questions) return [];
-    
+
     let filtered = questions;
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(question => 
+      filtered = filtered.filter(question =>
         question.questionText.toLowerCase().includes(query) ||
         (question.topicCategoryName && question.topicCategoryName.toLowerCase().includes(query))
       );
     }
-    
+
     // Filter by topic category
     if (selectedTopic !== "all") {
       filtered = filtered.filter(question => question.topicCategoryId === selectedTopic);
     }
-    
+
     // Filter by difficulty
     if (selectedDifficulty !== "all") {
       filtered = filtered.filter(question => question.difficulty === selectedDifficulty);
     }
-    
+
     return filtered;
   }, [questions, searchQuery, selectedTopic, selectedDifficulty]);
 
@@ -93,6 +93,7 @@ export default function AdminQuestions() {
       topicCategoryId: "",
       questionText: "",
       difficulty: "medium",
+      tags: [],
     },
   });
 
@@ -147,6 +148,7 @@ export default function AdminQuestions() {
     form.setValue("topicCategoryId", question.topicCategoryId);
     form.setValue("questionText", question.questionText);
     form.setValue("difficulty", question.difficulty);
+    form.setValue("tags", question.tags || []);
     setDialogOpen(true);
   };
 
@@ -273,6 +275,72 @@ export default function AdminQuestions() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Add a tag"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  const input = e.currentTarget;
+                                  const value = input.value.trim();
+                                  if (value) {
+                                    const currentTags = (field.value as string[]) || [];
+                                    if (!currentTags.includes(value)) {
+                                      field.onChange([...currentTags, value]);
+                                    }
+                                    input.value = "";
+                                  }
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={(e) => {
+                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                const value = input.value.trim();
+                                if (value) {
+                                  const currentTags = (field.value as string[]) || [];
+                                  if (!currentTags.includes(value)) {
+                                    field.onChange([...currentTags, value]);
+                                  }
+                                  input.value = "";
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {(field.value as string[])?.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="gap-1">
+                                {tag}
+                                <X
+                                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                                  onClick={() => {
+                                    const newTags = [...(field.value as string[])];
+                                    newTags.splice(index, 1);
+                                    field.onChange(newTags);
+                                  }}
+                                />
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
                     Cancel
@@ -309,7 +377,7 @@ export default function AdminQuestions() {
               </Button>
             )}
           </div>
-          
+
           <Select value={selectedTopic} onValueChange={setSelectedTopic}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Filter by topic category" />
@@ -336,7 +404,7 @@ export default function AdminQuestions() {
             </SelectContent>
           </Select>
         </div>
-        
+
         {(searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") && (
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>
@@ -369,6 +437,11 @@ export default function AdminQuestions() {
                       <Badge className={getDifficultyColor(question.difficulty)}>
                         {question.difficulty}
                       </Badge>
+                      {question.tags?.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                     <CardDescription className="text-foreground text-base">
                       {question.questionText}

@@ -50,6 +50,7 @@ export const questions = pgTable("questions", {
   topicCategoryId: uuid("topic_category_id").references(() => topicCategories.id).notNull(),
   questionText: text("question_text").notNull(),
   difficulty: varchar("difficulty", { length: 50 }).notNull(), // easy, medium, hard
+  tags: jsonb("tags").$type<string[]>().default([]).notNull(),
   expectedKeyPoints: jsonb("expected_key_points").$type<string[]>(),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
