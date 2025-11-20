@@ -40,7 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertTestSchema, type InsertTest, type Test, type Question } from "@shared/schema";
+import { insertTestSchema, type InsertTest, type Test, type Question, type TopicCategory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -50,6 +50,13 @@ export default function AdminTests() {
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [questionTopicFilter, setQuestionTopicFilter] = useState<string>("all");
+  const [questionTagFilter, setQuestionTagFilter] = useState<string>("all");
+  const [questionSearchQuery, setQuestionSearchQuery] = useState<string>("");
+
+  const { data: topicCategories } = useQuery<TopicCategory[]>({
+    queryKey: ["/api/topic-categories"],
+  });
 
   const { data: tests, isLoading } = useQuery<Test[]>({
     queryKey: ["/api/tests"],
@@ -63,9 +70,9 @@ export default function AdminTests() {
   const filteredTests = useMemo(() => {
     if (!tests) return [];
     if (!searchQuery.trim()) return tests;
-    
+
     const query = searchQuery.toLowerCase();
-    return tests.filter(topic => 
+    return tests.filter(topic =>
       topic.name.toLowerCase().includes(query) ||
       (topic.description && topic.description.toLowerCase().includes(query))
     );
@@ -79,10 +86,37 @@ export default function AdminTests() {
     },
   });
 
-  // Filter questions based on search query
+  // Filter questions based on filters
   const filteredQuestions = useMemo(() => {
     if (!questions) return [];
-    return questions;
+    let filtered = questions;
+
+    if (questionTopicFilter !== "all") {
+      filtered = filtered.filter(q => q.topicCategoryId === questionTopicFilter);
+    }
+
+    if (questionTagFilter !== "all") {
+      filtered = filtered.filter(q => q.tags && q.tags.includes(questionTagFilter));
+    }
+
+    if (questionSearchQuery.trim()) {
+      const query = questionSearchQuery.toLowerCase();
+      filtered = filtered.filter(q => q.questionText.toLowerCase().includes(query));
+    }
+
+    return filtered;
+  }, [questions, questionTopicFilter, questionTagFilter, questionSearchQuery]);
+
+  // Get unique tags from all questions
+  const uniqueTags = useMemo(() => {
+    if (!questions) return [];
+    const tags = new Set<string>();
+    questions.forEach(q => {
+      if (q.tags) {
+        q.tags.forEach(tag => tags.add(tag));
+      }
+    });
+    return Array.from(tags).sort();
   }, [questions]);
 
   const createTestMutation = useMutation({
@@ -149,12 +183,15 @@ export default function AdminTests() {
     setDialogOpen(false);
     setEditingTest(null);
     setSelectedQuestions([]);
+    setQuestionTopicFilter("all");
+    setQuestionTagFilter("all");
+    setQuestionSearchQuery("");
     form.reset();
   };
 
   const handleQuestionToggle = (questionId: string) => {
-    setSelectedQuestions(prev => 
-      prev.includes(questionId) 
+    setSelectedQuestions(prev =>
+      prev.includes(questionId)
         ? prev.filter(id => id !== questionId)
         : [...prev, questionId]
     );
@@ -231,10 +268,49 @@ export default function AdminTests() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Question Selection */}
                 <div className="space-y-3">
-                  <FormLabel>Select Questions</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Select Questions</FormLabel>
+                    <div className="flex gap-2">
+                      <Select value={questionTopicFilter} onValueChange={setQuestionTopicFilter}>
+                        <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectValue placeholder="Topic" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Topics</SelectItem>
+                          {topicCategories?.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={questionTagFilter} onValueChange={setQuestionTagFilter}>
+                        <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectValue placeholder="Tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Tags</SelectItem>
+                          {uniqueTags.map((tag) => (
+                            <SelectItem key={tag} value={tag}>
+                              {tag}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
+                    <Input
+                      placeholder="Search questions..."
+                      value={questionSearchQuery}
+                      onChange={(e) => setQuestionSearchQuery(e.target.value)}
+                      className="pl-8 h-8 text-xs"
+                    />
+                  </div>
                   {questionsLoading ? (
                     <div className="space-y-2">
                       {[1, 2, 3].map((i) => (
@@ -283,9 +359,9 @@ export default function AdminTests() {
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createTestMutation.isPending} 
+                  <Button
+                    type="submit"
+                    disabled={createTestMutation.isPending}
                     data-testid="button-save-topic"
                   >
                     {createTestMutation.isPending ? "Saving..." : editingTest ? "Update" : "Create"}
@@ -325,60 +401,62 @@ export default function AdminTests() {
         )}
       </div>
 
-      {tests && tests.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTests.map((topic) => (
-            <Card key={topic.id} data-testid={`topic-card-${topic.id}`}>
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>{topic.name}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {topic.description || "No description"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(topic)}
-                  data-testid={`button-edit-${topic.id}`}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => deleteTestMutation.mutate(topic.id)}
-                  disabled={deleteTestMutation.isPending}
-                  data-testid={`button-delete-${topic.id}`}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredTests.length === 0 && searchQuery ? (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No tests found</p>
-            <p className="text-sm">Try adjusting your search terms</p>
+      {
+        tests && tests.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredTests.map((topic) => (
+              <Card key={topic.id} data-testid={`topic-card-${topic.id}`}>
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>{topic.name}</CardTitle>
+                  <CardDescription className="line-clamp-2">
+                    {topic.description || "No description"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(topic)}
+                    data-testid={`button-edit-${topic.id}`}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteTestMutation.mutate(topic.id)}
+                    disabled={deleteTestMutation.isPending}
+                    data-testid={`button-delete-${topic.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </Card>
-      ) : (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No tests yet</p>
-            <p className="text-sm">Click "Add Test" to create your first educational test</p>
-          </div>
-        </Card>
-      )}
-    </div>
+        ) : filteredTests.length === 0 && searchQuery ? (
+          <Card className="p-12">
+            <div className="text-center text-muted-foreground">
+              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg mb-2">No tests found</p>
+              <p className="text-sm">Try adjusting your search terms</p>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-12">
+            <div className="text-center text-muted-foreground">
+              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg mb-2">No tests yet</p>
+              <p className="text-sm">Click "Add Test" to create your first educational test</p>
+            </div>
+          </Card>
+        )
+      }
+    </div >
   );
 }

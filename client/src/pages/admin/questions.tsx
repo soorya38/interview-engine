@@ -39,7 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuestionSchema, type InsertQuestion, type Question, type TopicCategory } from "@shared/schema";
+import { insertQuestionSchema, type InsertQuestion, type Question, type TopicCategory, insertTopicCategorySchema, type InsertTopicCategory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -50,6 +50,7 @@ export default function AdminQuestions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
+  const [topicCreationDialogOpen, setTopicCreationDialogOpen] = useState(false);
 
   const { data: topicCategories } = useQuery<TopicCategory[]>({
     queryKey: ["/api/topic-categories"],
@@ -97,6 +98,15 @@ export default function AdminQuestions() {
     },
   });
 
+  const topicForm = useForm<InsertTopicCategory>({
+    resolver: zodResolver(insertTopicCategorySchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      iconName: "",
+    },
+  });
+
   const createQuestionMutation = useMutation({
     mutationFn: async (data: InsertQuestion) => {
       if (editingQuestion) {
@@ -138,6 +148,29 @@ export default function AdminQuestions() {
       toast({
         variant: "destructive",
         title: "Failed to delete question",
+        description: error.message,
+      });
+    },
+  });
+
+  const createTopicCategoryMutation = useMutation({
+    mutationFn: async (data: InsertTopicCategory) => {
+      return await apiRequest("POST", "/api/topic-categories", data);
+    },
+    onSuccess: (newTopic: TopicCategory) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/topic-categories"] });
+      toast({
+        title: "Topic category created",
+        description: "New topic category has been created successfully",
+      });
+      setTopicCreationDialogOpen(false);
+      topicForm.reset();
+      form.setValue("topicCategoryId", newTopic.id);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to save topic category",
         description: error.message,
       });
     },
@@ -217,20 +250,31 @@ export default function AdminQuestions() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Topic Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-topic-category">
-                            <SelectValue placeholder="Select a topic category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {topicCategories?.map((topicCategory) => (
-                            <SelectItem key={topicCategory.id} value={topicCategory.id}>
-                              {topicCategory.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center">
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-topic-category">
+                              <SelectValue placeholder="Select a topic category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {topicCategories?.map((topicCategory) => (
+                              <SelectItem key={topicCategory.id} value={topicCategory.id}>
+                                {topicCategory.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="ml-2"
+                          onClick={() => setTopicCreationDialogOpen(true)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -353,6 +397,59 @@ export default function AdminQuestions() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={topicCreationDialogOpen} onOpenChange={setTopicCreationDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Topic Category</DialogTitle>
+              <DialogDescription>
+                Create a new topic category for organizing questions
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...topicForm}>
+              <form onSubmit={topicForm.handleSubmit((data) => createTopicCategoryMutation.mutate(data))} className="space-y-4">
+                <FormField
+                  control={topicForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., JavaScript, React, Node.js" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={topicForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe what this category covers..."
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setTopicCreationDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createTopicCategoryMutation.isPending}>
+                    {createTopicCategoryMutation.isPending ? "Saving..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filter Section */}
@@ -425,73 +522,75 @@ export default function AdminQuestions() {
         )}
       </div>
 
-      {questions && questions.length > 0 ? (
-        <div className="space-y-3">
-          {filteredQuestions.map((question) => (
-            <Card key={question.id} data-testid={`question-card-${question.id}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{question.topicCategoryName}</Badge>
-                      <Badge className={getDifficultyColor(question.difficulty)}>
-                        {question.difficulty}
-                      </Badge>
-                      {question.tags?.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
+      {
+        questions && questions.length > 0 ? (
+          <div className="space-y-3">
+            {filteredQuestions.map((question) => (
+              <Card key={question.id} data-testid={`question-card-${question.id}`}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">{question.topicCategoryName}</Badge>
+                        <Badge className={getDifficultyColor(question.difficulty)}>
+                          {question.difficulty}
                         </Badge>
-                      ))}
+                        {question.tags?.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <CardDescription className="text-foreground text-base">
+                        {question.questionText}
+                      </CardDescription>
                     </div>
-                    <CardDescription className="text-foreground text-base">
-                      {question.questionText}
-                    </CardDescription>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(question)}
+                        data-testid={`button-edit-${question.id}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteQuestionMutation.mutate(question.id)}
+                        disabled={deleteQuestionMutation.isPending}
+                        data-testid={`button-delete-${question.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(question)}
-                      data-testid={`button-edit-${question.id}`}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteQuestionMutation.mutate(question.id)}
-                      disabled={deleteQuestionMutation.isPending}
-                      data-testid={`button-delete-${question.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      ) : filteredQuestions.length === 0 && (searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") ? (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No questions found</p>
-            <p className="text-sm">Try adjusting your search terms or filters</p>
+                </CardHeader>
+              </Card>
+            ))}
           </div>
-        </Card>
-      ) : (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No questions yet</p>
-            <p className="text-sm">
-              {!topicCategories || topicCategories.length === 0
-                ? "Create topic categories first, then add questions"
-                : "Click 'Add Question' to create your first question"}
-            </p>
-          </div>
-        </Card>
-      )}
-    </div>
+        ) : filteredQuestions.length === 0 && (searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") ? (
+          <Card className="p-12">
+            <div className="text-center text-muted-foreground">
+              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg mb-2">No questions found</p>
+              <p className="text-sm">Try adjusting your search terms or filters</p>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-12">
+            <div className="text-center text-muted-foreground">
+              <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg mb-2">No questions yet</p>
+              <p className="text-sm">
+                {!topicCategories || topicCategories.length === 0
+                  ? "Create topic categories first, then add questions"
+                  : "Click 'Add Question' to create your first question"}
+              </p>
+            </div>
+          </Card>
+        )
+      }
+    </div >
   );
 }
