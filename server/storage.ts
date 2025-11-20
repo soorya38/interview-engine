@@ -23,7 +23,7 @@ import {
   type InsertScore,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql, count } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -69,6 +69,10 @@ export interface IStorage {
   getScore(sessionId: string): Promise<Score | undefined>;
   getUserScores(userId: string): Promise<Score[]>;
   createScore(score: InsertScore): Promise<Score>;
+
+  // Admin
+  getPaginatedStudentSessions(page: number, limit: number): Promise<{ sessions: any[], total: number }>;
+  getAdminAnalytics(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -216,6 +220,126 @@ export class DatabaseStorage implements IStorage {
   async createScore(insertScore: InsertScore): Promise<Score> {
     const [score] = await db.insert(scores).values([insertScore as any]).returning();
     return score;
+  }
+
+  // Admin
+  async getPaginatedStudentSessions(page: number, limit: number): Promise<{ sessions: any[], total: number }> {
+    const offset = (page - 1) * limit;
+
+    const sessionsQuery = await db.select({
+      session: interviewSessions,
+      user: {
+        id: users.id,
+        username: users.username,
+        fullName: users.fullName,
+        email: users.email,
+      },
+      testName: tests.name,
+      score: scores,
+      questionCount: sql<number>`(SELECT COUNT(*) FROM ${interviewTurns} WHERE ${interviewTurns.sessionId} = ${interviewSessions.id})`,
+      totalQuestions: sql<number>`jsonb_array_length(${interviewSessions.questionIds})`,
+    })
+      .from(interviewSessions)
+      .innerJoin(users, eq(interviewSessions.userId, users.id))
+      .leftJoin(tests, eq(interviewSessions.testId, tests.id))
+      .leftJoin(scores, eq(interviewSessions.id, scores.sessionId))
+      .where(eq(interviewSessions.status, "completed"))
+      .orderBy(desc(interviewSessions.completedAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [totalResult] = await db.select({ count: count() })
+      .from(interviewSessions)
+      .where(eq(interviewSessions.status, "completed"));
+
+    const formattedSessions = sessionsQuery.map(item => ({
+      ...item.session,
+      user: item.user,
+      testName: item.testName,
+      score: item.score,
+      questionCount: item.questionCount,
+      totalQuestions: item.totalQuestions,
+    }));
+
+    return {
+      sessions: formattedSessions,
+      total: totalResult?.count || 0,
+    };
+  }
+
+  async getAdminAnalytics(): Promise<any> {
+    const [totalSessions] = await db.select({ count: count() })
+      .from(interviewSessions)
+      .where(eq(interviewSessions.status, "completed"));
+
+    const [totalUsers] = await db.select({ count: count() })
+      .from(users);
+
+    // Active users (users who have completed at least one test)
+    const [activeUsers] = await db.select({ count: count(sql`DISTINCT ${interviewSessions.userId}`) })
+      .from(interviewSessions)
+      .where(eq(interviewSessions.status, "completed"));
+
+    // Average scores
+    const [avgScores] = await db.select({
+      grammar: sql<number>`AVG(${scores.grammarScore})`,
+      technical: sql<number>`AVG(${scores.technicalScore})`,
+      depth: sql<number>`AVG(${scores.depthScore})`,
+      communication: sql<number>`AVG(${scores.communicationScore})`,
+      total: sql<number>`AVG(${scores.totalScore})`,
+    }).from(scores);
+
+    // Grade distribution
+    const gradeDistribution = await db.select({
+      grade: scores.grade,
+      count: count(),
+    })
+      .from(scores)
+      .groupBy(scores.grade);
+
+    const gradeDistMap = {
+      A: 0, B: 0, C: 0, D: 0, F: 0
+    };
+    gradeDistribution.forEach((g) => {
+      if (g.grade && g.grade in gradeDistMap) {
+        gradeDistMap[g.grade as keyof typeof gradeDistMap] = g.count;
+      }
+    });
+
+    // Sessions by day (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sessionsByDay = await db.select({
+      date: sql<string>`DATE(${interviewSessions.completedAt})`,
+      count: count(),
+    })
+      .from(interviewSessions)
+      .where(and(
+        eq(interviewSessions.status, "completed"),
+        sql`${interviewSessions.completedAt} >= ${thirtyDaysAgo.toISOString()}`
+      ))
+      .groupBy(sql`DATE(${interviewSessions.completedAt})`);
+
+    const sessionsByDayMap: Record<string, number> = {};
+    sessionsByDay.forEach((s) => {
+      sessionsByDayMap[s.date] = s.count;
+    });
+
+    return {
+      totalSessions: totalSessions?.count || 0,
+      totalUsers: totalUsers?.count || 0,
+      activeUsers: activeUsers?.count || 0,
+      averageScores: {
+        grammar: Math.round(Number(avgScores?.grammar || 0)),
+        technical: Math.round(Number(avgScores?.technical || 0)),
+        depth: Math.round(Number(avgScores?.depth || 0)),
+        communication: Math.round(Number(avgScores?.communication || 0)),
+        total: Math.round(Number(avgScores?.total || 0)),
+      },
+      gradeDistribution: gradeDistMap,
+      sessionsByDay: sessionsByDayMap,
+    };
   }
 }
 

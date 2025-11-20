@@ -35,7 +35,7 @@ export default function Interview() {
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const answerRef = useRef(answer);
-  
+
   // Update ref when answer changes
   useEffect(() => {
     answerRef.current = answer;
@@ -102,33 +102,33 @@ export default function Interview() {
       console.log("Answer ref length:", answerRef.current.length);
       console.log("Is manual edit mode:", isManualEdit);
       console.log("Is typing:", isTyping);
-      
+
       // Don't auto-submit if user is in manual edit mode or currently typing
       if (isManualEdit || isTyping) {
         console.log("Auto-submit cancelled - User is in manual edit mode or typing");
         return;
       }
-      
+
       // Use the current answer state which includes both final transcript and interim transcript
       // This ensures we capture all speech, even if there are gaps
       // The answerRef is kept in sync by the useEffect that combines transcript + interimTranscript
       const answerFromRef = answerRef.current.trim();
       const answerFromTranscript = transcript.trim();
-      
+
       // Prefer answerRef as it includes interim results, but use transcript param as fallback
       // Use whichever is longer to ensure we capture all accumulated speech
       let answerToSubmit = answerFromRef || answerFromTranscript;
       if (answerFromRef && answerFromTranscript) {
         // If both exist, use the longer one to ensure completeness
-        answerToSubmit = answerFromRef.length >= answerFromTranscript.length 
-          ? answerFromRef 
+        answerToSubmit = answerFromRef.length >= answerFromTranscript.length
+          ? answerFromRef
           : answerFromTranscript;
       }
-      
+
       console.log("Answer from ref:", answerFromRef);
       console.log("Answer from transcript param:", answerFromTranscript);
       console.log("Using answer:", answerToSubmit);
-      
+
       // Check if answer has more than 1 character
       if (answerToSubmit.length > 1) {
         console.log("Auto-submitting answer:", answerToSubmit);
@@ -195,7 +195,8 @@ export default function Interview() {
       return data;
     },
     enabled: !!sessionId,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      const data = query.state.data;
       if (data?.status === "completed") {
         return false;
       }
@@ -218,7 +219,7 @@ export default function Interview() {
       // The speak function will handle user interaction requirements
       speak(session.currentQuestion.questionText);
     }
-    
+
     // Cleanup: stop speaking when component unmounts or question changes
     return () => {
       stopSpeaking();
@@ -235,7 +236,7 @@ export default function Interview() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
       setAnswer("");
-      
+
       if (data.completed) {
         queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
         setLocation(`/results/${sessionId}`);
@@ -301,46 +302,46 @@ export default function Interview() {
     setIsManualEdit(true);
     setEditCountdown(0); // No countdown timer in manual edit mode
     setIsTyping(false); // Reset typing state
-    
+
     // Stop speech recognition when user enters manual edit mode
     if (isListening) {
       console.log("Stopping speech recognition due to manual edit");
       handleStopListening();
     }
-    
+
     console.log("User clicked textarea, entering manual edit mode (no timer)");
   };
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newAnswer = e.target.value;
     setAnswer(newAnswer);
-    
+
     // Enter manual edit mode when user starts typing
     if (!isManualEdit) {
       setIsManualEdit(true);
       console.log("User started typing, entering manual edit mode");
-      
+
       // Stop speech recognition when user starts typing
       if (isListening) {
         console.log("Stopping speech recognition due to typing");
         handleStopListening();
       }
     }
-    
+
     // Set typing state to true
     setIsTyping(true);
-    
+
     // Clear existing typing timeout
     if (typingTimeoutId) {
       clearTimeout(typingTimeoutId);
     }
-    
+
     // Set new timeout to detect when user stops typing (2 seconds)
     const newTimeoutId = setTimeout(() => {
       setIsTyping(false);
       console.log("User stopped typing");
     }, 2000);
-    
+
     setTypingTimeoutId(newTimeoutId);
   };
 
@@ -348,9 +349,9 @@ export default function Interview() {
     console.log("handleStartListening called");
     console.log("isSupported:", isSupported);
     console.log("isListening:", isListening);
-    
+
     await enableAudio(); // Enable audio on user interaction
-    
+
     if (!isSupported) {
       console.log("Speech recognition not supported");
       toast({
@@ -360,12 +361,12 @@ export default function Interview() {
       });
       return;
     }
-    
+
     // Clear the answer field and reset transcript when starting new speech session
     setAnswer("");
     setIsManualEdit(false);
     resetTranscript(); // Reset the accumulated transcript in the hook
-    
+
     console.log("Starting speech recognition...");
     startListening();
   };
@@ -527,17 +528,14 @@ export default function Interview() {
                 onChange={handleAnswerChange}
                 onFocus={handleManualEdit}
                 placeholder={
-                  isSpeaking 
-                    ? "Question is being read... Please wait..." 
+                  isSpeaking
+                    ? "Question is being read... Please wait..."
                     : "Type your answer here or use voice input..."
                 }
-                className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${
-                  isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
-                } ${
-                  isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
-                } ${
-                  isSpeaking ? 'opacity-60 cursor-not-allowed' : ''
-                }`}
+                className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
+                  } ${isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
+                  } ${isSpeaking ? 'opacity-60 cursor-not-allowed' : ''
+                  }`}
                 disabled={submitAnswerMutation.isPending || isSpeaking}
                 data-testid="textarea-answer"
               />
@@ -599,12 +597,12 @@ export default function Interview() {
               {/* Interim transcript display */}
               {interimTranscript && (
                 <div className="text-base text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
-                  <span className="font-semibold">🎤 Live transcript:</span> 
+                  <span className="font-semibold">🎤 Live transcript:</span>
                   <span className="ml-2 font-medium">{interimTranscript}</span>
                 </div>
               )}
             </div>
-            
+
 
             <div className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">

@@ -1,19 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { 
-  BookOpen, 
-  Clock, 
-  User, 
-  Award, 
-  MessageSquare, 
+import {
+  BookOpen,
+  Clock,
+  User,
+  Award,
+  MessageSquare,
   ArrowRight,
-  CheckCircle2,
   AlertCircle,
-  TrendingUp
+  CheckCircle2,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -43,14 +46,21 @@ type TurnWithQuestion = InterviewTurn & {
 
 export default function StudentAnswers() {
   const [, setLocation] = useLocation();
-  
-  const { data: sessions, isLoading } = useQuery<StudentSession[]>({
-    queryKey: ["/api/admin/student-sessions"],
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/admin/student-sessions", page],
     queryFn: async () => {
-      const data = await apiRequest("GET", "/api/admin/student-sessions");
-      return data;
+      const res = await apiRequest("GET", `/api/admin/student-sessions?page=${page}&limit=${limit}`);
+      return res as { sessions: StudentSession[], total: number };
     },
+    placeholderData: keepPreviousData,
   });
+
+  const sessions = data?.sessions || [];
+  const total = data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   if (isLoading) {
     return (
@@ -146,6 +156,33 @@ export default function StudentAnswers() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <Card>
@@ -344,11 +381,11 @@ export function StudentAnswerDetail() {
                   const questionNumber = index + 1;
                   const totalScore = evalData
                     ? Math.round(
-                        evalData.technical * 0.5 +
-                        evalData.communication * 0.2 +
-                        evalData.depth * 0.15 +
-                        evalData.grammar * 0.15
-                      )
+                      evalData.technical * 0.5 +
+                      evalData.communication * 0.2 +
+                      evalData.depth * 0.15 +
+                      evalData.grammar * 0.15
+                    )
                     : 0;
 
                   return (
@@ -376,7 +413,7 @@ export function StudentAnswerDetail() {
                             <p className="text-base leading-relaxed">{turn.question.questionText}</p>
                           </div>
                         )}
-                        
+
                         <div>
                           <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Student Answer:</h4>
                           <p className="text-base leading-relaxed bg-muted/50 p-4 rounded-lg">

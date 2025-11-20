@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const validated = insertUserSchema.parse(req.body);
-      
+
       // Check if username exists
       const existing = await storage.getUserByUsername(validated.username);
       if (existing) {
@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/topic-categories", authMiddleware, async (req, res) => {
     try {
       const allTopicCategories = await storage.getAllTopicCategories();
-      
+
       // Get all users once to avoid N+1 queries
       const allUsers = await storage.getAllUsers();
       const adminUserIds = new Set(
@@ -106,12 +106,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter((user) => user.role === 'admin' || user.role === 'instructor')
           .map((user) => user.id)
       );
-      
+
       // Filter topic categories to only show those created by admin/instructor users
-      const topicCategories = allTopicCategories.filter((topicCategory) => 
+      const topicCategories = allTopicCategories.filter((topicCategory) =>
         topicCategory.createdBy && adminUserIds.has(topicCategory.createdBy)
       );
-      
+
       // Add question count for each topic category
       const topicCategoriesWithCounts = await Promise.all(
         topicCategories.map(async (topicCategory) => {
@@ -165,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tests", authMiddleware, async (req, res) => {
     try {
       const allTests = await storage.getAllTests();
-      
+
       // Get all users once to avoid N+1 queries
       const allUsers = await storage.getAllUsers();
       const adminUserIds = new Set(
@@ -173,12 +173,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter((user) => user.role === 'admin' || user.role === 'instructor')
           .map((user) => user.id)
       );
-      
+
       // Filter tests to only show those created by admin/instructor users
-      const tests = allTests.filter((test) => 
+      const tests = allTests.filter((test) =>
         test.createdBy && adminUserIds.has(test.createdBy)
       );
-      
+
       // Add question count for each test
       const testsWithCounts = await Promise.all(
         tests.map(async (test) => {
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions", authMiddleware, async (req, res) => {
     try {
       const questions = await storage.getAllQuestions();
-      
+
       // Add topic category name to each question
       const questionsWithTopicCategories = await Promise.all(
         questions.map(async (question) => {
@@ -333,10 +333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/recent", authMiddleware, async (req, res) => {
     try {
       const sessions = await storage.getUserSessions(req.user!.userId);
-      
+
       // Filter only completed sessions and limit to 5 for dashboard
       const completedSessions = sessions.filter(s => s.status === "completed");
-      
+
       const sessionsWithDetails = await Promise.all(
         completedSessions.slice(0, 5).map(async (session) => {
           const test = await storage.getTest(session.testId);
@@ -358,16 +358,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/history", authMiddleware, async (req, res) => {
     try {
       const sessions = await storage.getUserSessions(req.user!.userId);
-      
+
       // Get all completed sessions for history page
       const completedSessions = sessions.filter(s => s.status === "completed");
-      
+
       const sessionsWithDetails = await Promise.all(
         completedSessions.map(async (session) => {
           const test = await storage.getTest(session.testId);
           const score = await storage.getScore(session.id);
           const turns = await storage.getSessionTurns(session.id);
-          
+
           return {
             ...session,
             testName: test?.name,
@@ -445,14 +445,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const turnNumber = session.currentQuestionIndex;
       // Ensure aiResponse is not null or empty
       const aiResponse = evaluation.interviewer_text?.trim() || evaluation.feedback?.trim() || "Thank you for your answer.";
-      
+
       // Ensure arrays are properly set (not null/undefined)
       const strengths = Array.isArray(evaluation.strengths) ? evaluation.strengths : [];
       const areasToImprove = Array.isArray(evaluation.areasToImprove) ? evaluation.areasToImprove : [];
       const recommendations = Array.isArray(evaluation.recommendations) ? evaluation.recommendations : [];
-      
+
       console.log("Saving turn with strengths:", strengths);
-      
+
       const turn = await storage.createTurn({
         sessionId: session.id,
         questionId: currentQuestion.id,
@@ -478,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isComplete) {
         // Calculate final scores
         const allTurns = await storage.getSessionTurns(session.id);
-        
+
         const avgGrammar = Math.round(
           allTurns.reduce((sum, t) => sum + (t.evaluation?.grammar || 0), 0) / allTurns.length
         );
@@ -575,7 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionId = req.params.id;
       const session = await storage.getSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
@@ -585,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const turns = await storage.getSessionTurns(sessionId);
-      
+
       // Fetch question details for each turn
       const turnsWithQuestions = await Promise.all(
         turns.map(async (turn) => {
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionId = req.params.id;
       const session = await storage.getSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
@@ -715,42 +715,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes for viewing student data
   app.get("/api/admin/student-sessions", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const allUsers = await storage.getAllUsers();
-      const allSessions = [];
-      
-      // Get all completed sessions with user and test details
-      for (const user of allUsers) {
-        const sessions = await storage.getUserSessions(user.id);
-        const completedSessions = sessions.filter(s => s.status === "completed");
-        
-        for (const session of completedSessions) {
-          const test = await storage.getTest(session.testId);
-          const score = await storage.getScore(session.id);
-          const turns = await storage.getSessionTurns(session.id);
-          
-          allSessions.push({
-            ...session,
-            user: {
-              id: user.id,
-              username: user.username,
-              fullName: user.fullName,
-              email: user.email,
-            },
-            testName: test?.name,
-            score,
-            questionCount: turns.length,
-            totalQuestions: session.questionIds.length,
-          });
-        }
-      }
-      
-      // Sort by most recent first
-      allSessions.sort((a, b) => 
-        new Date(b.completedAt || b.startedAt).getTime() - 
-        new Date(a.completedAt || a.startedAt).getTime()
-      );
-      
-      res.json(allSessions);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await storage.getPaginatedStudentSessions(page, limit);
+
+      res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -760,7 +730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionId = req.params.sessionId;
       const session = await storage.getSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
@@ -769,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const test = await storage.getTest(session.testId);
       const score = await storage.getScore(sessionId);
       const turns = await storage.getSessionTurns(sessionId);
-      
+
       // Fetch question details for each turn
       const turnsWithQuestions = await Promise.all(
         turns.map(async (turn) => {
@@ -808,77 +778,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/analytics", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const allUsers = await storage.getAllUsers();
-      const allSessions = [];
-      const allScores = [];
-      
-      // Collect all sessions and scores
-      for (const user of allUsers) {
-        const sessions = await storage.getUserSessions(user.id);
-        const scores = await storage.getUserScores(user.id);
-        
-        allSessions.push(...sessions.filter(s => s.status === "completed"));
-        allScores.push(...scores);
-      }
-      
-      // Calculate analytics
-      const totalSessions = allSessions.length;
-      const totalUsers = allUsers.length;
-      const activeUsers = new Set(allSessions.map(s => s.userId)).size;
-      
-      // Average scores
-      const avgGrammar = allScores.length > 0
-        ? Math.round(allScores.reduce((sum, s) => sum + s.grammarScore, 0) / allScores.length)
-        : 0;
-      const avgTechnical = allScores.length > 0
-        ? Math.round(allScores.reduce((sum, s) => sum + s.technicalScore, 0) / allScores.length)
-        : 0;
-      const avgDepth = allScores.length > 0
-        ? Math.round(allScores.reduce((sum, s) => sum + s.depthScore, 0) / allScores.length)
-        : 0;
-      const avgCommunication = allScores.length > 0
-        ? Math.round(allScores.reduce((sum, s) => sum + s.communicationScore, 0) / allScores.length)
-        : 0;
-      const avgTotal = allScores.length > 0
-        ? Math.round(allScores.reduce((sum, s) => sum + s.totalScore, 0) / allScores.length)
-        : 0;
-      
-      // Grade distribution
-      const gradeDistribution = {
-        A: allScores.filter(s => s.grade === "A").length,
-        B: allScores.filter(s => s.grade === "B").length,
-        C: allScores.filter(s => s.grade === "C").length,
-        D: allScores.filter(s => s.grade === "D").length,
-        F: allScores.filter(s => s.grade === "F").length,
-      };
-      
-      // Sessions per day (last 30 days)
-      const sessionsByDay: Record<string, number> = {};
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      allSessions.forEach(session => {
-        const date = new Date(session.completedAt || session.startedAt);
-        if (date >= thirtyDaysAgo) {
-          const dateKey = date.toISOString().split('T')[0];
-          sessionsByDay[dateKey] = (sessionsByDay[dateKey] || 0) + 1;
-        }
-      });
-      
-      res.json({
-        totalSessions,
-        totalUsers,
-        activeUsers,
-        averageScores: {
-          grammar: avgGrammar,
-          technical: avgTechnical,
-          depth: avgDepth,
-          communication: avgCommunication,
-          total: avgTotal,
-        },
-        gradeDistribution,
-        sessionsByDay,
-      });
+      const analytics = await storage.getAdminAnalytics();
+      res.json(analytics);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -903,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/profile", authMiddleware, async (req, res) => {
     try {
       const validated = updateProfileSchema.parse(req.body);
-      
+
       const user = await storage.updateUser(req.user!.userId, validated);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
