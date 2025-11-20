@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileQuestion, Trash2, Edit, Search, X } from "lucide-react";
+import { Plus, FileQuestion, Trash2, Edit, Search, X, ArrowLeft, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
@@ -50,7 +50,11 @@ export default function AdminQuestions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
+
   const [topicCreationDialogOpen, setTopicCreationDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"topics" | "questions">("topics");
+  const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
 
   const { data: topicCategories } = useQuery<TopicCategory[]>({
     queryKey: ["/api/topic-categories"],
@@ -76,7 +80,9 @@ export default function AdminQuestions() {
     }
 
     // Filter by topic category
-    if (selectedTopic !== "all") {
+    if (activeTopicId) {
+      filtered = filtered.filter(question => question.topicCategoryId === activeTopicId);
+    } else if (selectedTopic !== "all") {
       filtered = filtered.filter(question => question.topicCategoryId === selectedTopic);
     }
 
@@ -85,8 +91,33 @@ export default function AdminQuestions() {
       filtered = filtered.filter(question => question.difficulty === selectedDifficulty);
     }
 
+    // Filter by tag
+    if (selectedTag !== "all") {
+      filtered = filtered.filter(question => question.tags?.includes(selectedTag));
+    }
+
     return filtered;
-  }, [questions, searchQuery, selectedTopic, selectedDifficulty]);
+  }, [questions, searchQuery, selectedTopic, selectedDifficulty, activeTopicId, selectedTag]);
+
+  // Get unique tags from all questions
+  const uniqueTags = useMemo(() => {
+    if (!questions) return [];
+    const tags = new Set<string>();
+    questions.forEach(q => {
+      q.tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [questions]);
+
+  // Calculate question counts per topic
+  const questionCounts = useMemo(() => {
+    if (!questions) return {};
+    const counts: Record<string, number> = {};
+    questions.forEach(q => {
+      counts[q.topicCategoryId] = (counts[q.topicCategoryId] || 0) + 1;
+    });
+    return counts;
+  }, [questions]);
 
   const form = useForm<InsertQuestion>({
     resolver: zodResolver(insertQuestionSchema),
@@ -221,16 +252,39 @@ export default function AdminQuestions() {
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-semibold text-foreground mb-2">
-            Manage Questions
-          </h1>
+          <div className="flex items-center gap-4 mb-2">
+            {viewMode === "questions" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setViewMode("topics");
+                  setActiveTopicId(null);
+                  setSelectedTopic("all");
+                }}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+            )}
+            <h1 className="text-4xl font-semibold text-foreground">
+              {viewMode === "topics" ? "Question Topics" : activeTopicId ? topicCategories?.find(t => t.id === activeTopicId)?.name : "Manage Questions"}
+            </h1>
+          </div>
           <p className="text-muted-foreground">
-            Build your question bank
+            {viewMode === "topics" ? "Select a topic to manage its questions" : "Build your question bank"}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingQuestion(null)} data-testid="button-add-question">
+            <Button
+              onClick={() => {
+                setEditingQuestion(null);
+                if (activeTopicId) {
+                  form.setValue("topicCategoryId", activeTopicId);
+                }
+              }}
+              data-testid="button-add-question"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Question
             </Button>
@@ -452,143 +506,208 @@ export default function AdminQuestions() {
         </Dialog>
       </div>
 
-      {/* Search and Filter Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="relative flex-1 min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search questions by text or topic..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
 
-          <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by topic category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Topic Categories</SelectItem>
-              {topicCategories?.map((topicCategory) => (
-                <SelectItem key={topicCategory.id} value={topicCategory.id}>
-                  {topicCategory.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Filter by difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {(searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") && (
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>
-              {filteredQuestions.length} of {questions?.length || 0} questions
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedTopic("all");
-                setSelectedDifficulty("all");
-              }}
-            >
-              Clear filters
-            </Button>
-          </div>
-        )}
-      </div>
 
       {
-        questions && questions.length > 0 ? (
-          <div className="space-y-3">
-            {filteredQuestions.map((question) => (
-              <Card key={question.id} data-testid={`question-card-${question.id}`}>
+        viewMode === "topics" ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {topicCategories?.map((topic) => (
+              <Card key={topic.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline">{question.topicCategoryName}</Badge>
-                        <Badge className={getDifficultyColor(question.difficulty)}>
-                          {question.difficulty}
-                        </Badge>
-                        {question.tags?.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                      <CardDescription className="text-foreground text-base">
-                        {question.questionText}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(question)}
-                        data-testid={`button-edit-${question.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteQuestionMutation.mutate(question.id)}
-                        disabled={deleteQuestionMutation.isPending}
-                        data-testid={`button-delete-${question.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                    <BookOpen className="h-6 w-6 text-primary" />
                   </div>
+                  <CardTitle>{topic.name}</CardTitle>
+                  <CardDescription className="line-clamp-2">
+                    {topic.description || "No description"}
+                  </CardDescription>
                 </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mt-4">
+                    <Badge variant="secondary">
+                      {questionCounts[topic.id] || 0} Questions
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveTopicId(topic.id);
+                        setViewMode("questions");
+                      }}
+                    >
+                      View Questions
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             ))}
+            {(!topicCategories || topicCategories.length === 0) && (
+              <Card className="p-12 col-span-full">
+                <div className="text-center text-muted-foreground">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg mb-2">No topics yet</p>
+                  <p className="text-sm">Create topic categories first to start adding questions</p>
+                </div>
+              </Card>
+            )}
           </div>
-        ) : filteredQuestions.length === 0 && (searchQuery || selectedTopic !== "all" || selectedDifficulty !== "all") ? (
-          <Card className="p-12">
-            <div className="text-center text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg mb-2">No questions found</p>
-              <p className="text-sm">Try adjusting your search terms or filters</p>
-            </div>
-          </Card>
         ) : (
-          <Card className="p-12">
-            <div className="text-center text-muted-foreground">
-              <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg mb-2">No questions yet</p>
-              <p className="text-sm">
-                {!topicCategories || topicCategories.length === 0
-                  ? "Create topic categories first, then add questions"
-                  : "Click 'Add Question' to create your first question"}
-              </p>
+          <>
+            {/* Search and Filter Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="relative flex-1 min-w-[300px]">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search questions by text..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+
+                {!activeTopicId && (
+                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filter by topic category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Topic Categories</SelectItem>
+                      {topicCategories?.map((topicCategory) => (
+                        <SelectItem key={topicCategory.id} value={topicCategory.id}>
+                          {topicCategory.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Filter by difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedTag} onValueChange={setSelectedTag}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Filter by tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {uniqueTags.map((tag) => (
+                      <SelectItem key={tag} value={tag}>
+                        {tag}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(searchQuery || (!activeTopicId && selectedTopic !== "all") || selectedDifficulty !== "all" || selectedTag !== "all") && (
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>
+                    {filteredQuestions.length} of {questions?.length || 0} questions
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedTopic("all");
+                      setSelectedDifficulty("all");
+                      setSelectedTag("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              )}
             </div>
-          </Card>
+
+            {questions && questions.length > 0 ? (
+              <div className="space-y-3">
+                {filteredQuestions.map((question) => (
+                  <Card key={question.id} data-testid={`question-card-${question.id}`}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline">{question.topicCategoryName}</Badge>
+                            <Badge className={getDifficultyColor(question.difficulty)}>
+                              {question.difficulty}
+                            </Badge>
+                            {question.tags?.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          <CardDescription className="text-foreground text-base">
+                            {question.questionText}
+                          </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(question)}
+                            data-testid={`button-edit-${question.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteQuestionMutation.mutate(question.id)}
+                            disabled={deleteQuestionMutation.isPending}
+                            data-testid={`button-delete-${question.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredQuestions.length === 0 && (searchQuery || (!activeTopicId && selectedTopic !== "all") || selectedDifficulty !== "all" || selectedTag !== "all") ? (
+              <Card className="p-12">
+                <div className="text-center text-muted-foreground">
+                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg mb-2">No questions found</p>
+                  <p className="text-sm">Try adjusting your search terms or filters</p>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-12">
+                <div className="text-center text-muted-foreground">
+                  <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg mb-2">No questions yet</p>
+                  <p className="text-sm">
+                    {!topicCategories || topicCategories.length === 0
+                      ? "Create topic categories first, then add questions"
+                      : "Click 'Add Question' to create your first question"}
+                  </p>
+                </div>
+              </Card>
+            )}
+          </>
         )
       }
     </div >
