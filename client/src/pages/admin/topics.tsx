@@ -83,6 +83,7 @@ export default function AdminTests() {
     defaultValues: {
       name: "",
       description: "",
+      voiceAutoSubmitTimeout: 3000,
     },
   });
 
@@ -174,6 +175,7 @@ export default function AdminTests() {
     setEditingTest(topic);
     form.setValue("name", topic.name);
     form.setValue("description", topic.description || "");
+    form.setValue("voiceAutoSubmitTimeout", topic.voiceAutoSubmitTimeout);
     // Load existing question IDs for this topic
     setSelectedQuestions(topic.questionIds || []);
     setDialogOpen(true);
@@ -262,6 +264,26 @@ export default function AdminTests() {
                           {...field}
                           value={field.value || ""}
                           data-testid="textarea-topic-description"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="voiceAutoSubmitTimeout"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Voice Auto-Submit Timeout (ms)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="3000"
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                          value={field.value || 3000}
                         />
                       </FormControl>
                       <FormMessage />

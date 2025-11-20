@@ -38,7 +38,7 @@ export function useSpeechToText({
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
-  
+
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef('');
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,17 +77,17 @@ export function useSpeechToText({
   const setSilenceTimeout = useCallback(() => {
     clearSilenceTimeout();
     clearCountdown();
-    
+
     // Start countdown
     const countdownSeconds = Math.ceil(silenceTimeout / 1000);
     setCountdown(countdownSeconds);
-    
+
     let currentCount = countdownSeconds;
     countdownIntervalRef.current = setInterval(() => {
       currentCount--;
       setCountdown(currentCount);
     }, 1000);
-    
+
     console.log("Setting silence timeout for", silenceTimeout, "ms");
     silenceTimeoutRef.current = setTimeout(() => {
       console.log("Silence timeout triggered, isListening:", isListeningRef.current);
@@ -101,7 +101,7 @@ export function useSpeechToText({
         setIsListening(false);
         clearSilenceTimeout();
         clearCountdown();
-        
+
         // Then call auto-submit with current transcript
         onAutoSubmit?.(transcriptRef.current);
       }
@@ -112,7 +112,7 @@ export function useSpeechToText({
     console.log("useSpeechToText: startListening called");
     console.log("isSupported:", isSupported);
     console.log("isListening:", isListening);
-    
+
     if (!isSupported) {
       console.log("Speech recognition not supported in browser");
       setError('Speech recognition is not supported in this browser');
@@ -131,7 +131,7 @@ export function useSpeechToText({
       console.log("SpeechRecognition constructor:", SpeechRecognition);
       const recognition = new SpeechRecognition();
       console.log("Recognition instance created:", recognition);
-      
+
       recognition.continuous = true; // Always use continuous for better silence detection
       recognition.interimResults = true; // Always use interim results
       recognition.lang = language;
@@ -144,7 +144,7 @@ export function useSpeechToText({
         setError(null);
         lastSpeechTimeRef.current = Date.now();
         setSilenceTimeout();
-        
+
         // Start periodic silence check as fallback
         clearSilenceCheck();
         silenceCheckIntervalRef.current = setInterval(() => {
@@ -208,7 +208,7 @@ export function useSpeechToText({
         try {
           console.error('Speech recognition error:', event.error, event.message);
           let errorMessage = 'Speech recognition error occurred';
-          
+
           switch (event.error) {
             case 'no-speech':
               errorMessage = 'No speech was detected. Please try again.';
@@ -281,23 +281,23 @@ export function useSpeechToText({
       setError(errorMessage);
       onError?.(errorMessage);
     }
-  }, [isSupported, isListening, continuous, interimResults, language, onResult, onError]);
+  }, [isSupported, isListening, continuous, interimResults, language, onResult, onError, setSilenceTimeout]);
 
   const stopListening = useCallback(() => {
     try {
       console.log('stopListening called, isListening:', isListening, 'recognitionRef.current:', !!recognitionRef.current);
-      
+
       if (recognitionRef.current && isListening) {
         console.log('Stopping speech recognition');
         recognitionRef.current.stop();
       }
-      
+
       isListeningRef.current = false;
       setIsListening(false);
       clearSilenceTimeout();
       clearCountdown();
       clearSilenceCheck();
-      
+
       console.log('Stop listening completed successfully');
     } catch (error) {
       console.error('Error in stopListening:', error);

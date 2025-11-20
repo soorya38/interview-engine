@@ -397,12 +397,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const turns = await storage.getSessionTurns(session.id);
       const currentQuestion = await storage.getQuestion(session.questionIds[session.currentQuestionIndex]);
+      const test = await storage.getTest(session.testId);
 
       res.json({
         ...session,
         turns,
         currentQuestion,
         totalQuestions: session.questionIds.length,
+        voiceAutoSubmitTimeout: test?.voiceAutoSubmitTimeout || 3000,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

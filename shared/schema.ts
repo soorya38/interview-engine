@@ -39,6 +39,7 @@ export const tests = pgTable("tests", {
   questionIds: jsonb("question_ids").$type<string[]>().default([]).notNull(), // array of question UUIDs
   duration: integer("duration"), // duration in minutes
   difficulty: varchar("difficulty", { length: 50 }), // easy, medium, hard
+  voiceAutoSubmitTimeout: integer("voice_auto_submit_timeout").default(3000).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),

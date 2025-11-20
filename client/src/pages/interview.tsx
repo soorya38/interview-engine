@@ -41,6 +41,27 @@ export default function Interview() {
     answerRef.current = answer;
   }, [answer]);
 
+  const { data: session, isLoading } = useQuery<InterviewSession & {
+    currentQuestion?: { questionText: string };
+    turns?: InterviewTurn[];
+    totalQuestions?: number;
+    voiceAutoSubmitTimeout?: number;
+  }>({
+    queryKey: ["/api/sessions", sessionId],
+    queryFn: async () => {
+      const data = await apiRequest("GET", `/api/sessions/${sessionId}`);
+      return data;
+    },
+    enabled: !!sessionId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.status === "completed") {
+        return false;
+      }
+      return 1000;
+    },
+  });
+
   // Speech countdown timer removed - auto-submit immediately after speech
 
   // Countdown timer for manual edits (DISABLED - no timer in manual edit mode)
@@ -139,7 +160,7 @@ export default function Interview() {
       }
     },
     autoStart: false,
-    silenceTimeout: 4000
+    silenceTimeout: session?.voiceAutoSubmitTimeout || 4000
   });
 
   // Sync answer with transcript when listening (not in manual edit mode)
@@ -184,25 +205,7 @@ export default function Interview() {
     },
   });
 
-  const { data: session, isLoading } = useQuery<InterviewSession & {
-    currentQuestion?: { questionText: string };
-    turns?: InterviewTurn[];
-    totalQuestions?: number;
-  }>({
-    queryKey: ["/api/sessions", sessionId],
-    queryFn: async () => {
-      const data = await apiRequest("GET", `/api/sessions/${sessionId}`);
-      return data;
-    },
-    enabled: !!sessionId,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (data?.status === "completed") {
-        return false;
-      }
-      return 1000;
-    },
-  });
+
 
   // Auto-read question when it changes
   useEffect(() => {
