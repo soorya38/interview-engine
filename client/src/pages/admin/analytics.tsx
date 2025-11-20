@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Users, 
-  BookOpen, 
-  TrendingUp, 
+import {
+  Users,
+  BookOpen,
+  TrendingUp,
   Award,
   BarChart3,
   FileText,
@@ -88,7 +88,7 @@ function AnalyticsSection({
         <p className="text-muted-foreground">{description}</p>
       </div>
 
-      <div className={`grid gap - 6 ${ showTotalUsers ? 'md:grid-cols-4' : 'md:grid-cols-3' } `}>
+      <div className={`grid gap-6 ${showTotalUsers ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
@@ -259,7 +259,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
     queryFn: async () => {
       const endpoint = testId === "all"
         ? "/api/admin/student-sessions?page=1&limit=100"
-        : `/ api / admin / student - sessions ? page = 1 & limit=100`;
+        : `/api/admin/student-sessions?page=1&limit=100`;
       const res = await apiRequest("GET", endpoint);
       const allSessions = res.sessions || [];
 
@@ -328,7 +328,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
                     <div className="text-sm text-muted-foreground">Grade: {session.score.grade}</div>
                   </div>
                 )}
-                <Link href={`/ admin / student - answers / ${ session.id } `}>
+                <Link href={`/admin/student-answers/${session.id}`}>
                   <Button variant="outline" size="sm">
                     View Details
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -366,7 +366,7 @@ export default function Analytics() {
   const { data: testAnalytics, isLoading: testLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/admin/analytics/test", selectedTestId],
     queryFn: async () => {
-      const data = await apiRequest("GET", `/ api / admin / analytics / test / ${ selectedTestId } `);
+      const data = await apiRequest("GET", `/api/admin/analytics/test/${selectedTestId}`);
       return data;
     },
     enabled: selectedTestId !== "all",
@@ -503,7 +503,7 @@ export default function Analytics() {
                 </div>
               ) : testAnalytics ? (
                 <AnalyticsSection
-                  title={`Test Analytics: ${ selectedTest?.name || 'Selected Test' } `}
+                  title={`Test Analytics: ${selectedTest?.name || 'Selected Test'}`}
                   description={selectedTest?.description || 'Performance metrics for this specific test'}
                   analytics={testAnalytics}
                   showTotalUsers={false}
@@ -523,7 +523,7 @@ export default function Analytics() {
             <p className="text-muted-foreground">
               {selectedTestId === "all"
                 ? "Showing all student submissions across all tests"
-                : `Showing submissions for ${ selectedTest?.name || 'selected test'}`}
+                : `Showing submissions for ${selectedTest?.name || 'selected test'}`}
             </p>
           </div>
           <StudentAnswersList testId={selectedTestId} />
