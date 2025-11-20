@@ -9,13 +9,18 @@ import {
   Award,
   BarChart3,
   FileText,
-  ArrowRight
+  ArrowRight,
+  Download
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import * as XLSX from 'xlsx';
 
 type AnalyticsData = {
   totalSessions: number;
@@ -88,7 +93,7 @@ function AnalyticsSection({
         <p className="text-muted-foreground">{description}</p>
       </div>
 
-      <div className={`grid gap-6 ${showTotalUsers ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+      <div className={`grid gap - 6 ${showTotalUsers ? 'md:grid-cols-4' : 'md:grid-cols-3'} `}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
@@ -259,7 +264,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
     queryFn: async () => {
       const endpoint = testId === "all"
         ? "/api/admin/student-sessions?page=1&limit=100"
-        : `/api/admin/student-sessions?page=1&limit=100`;
+        : `/ api / admin / student - sessions ? page = 1 & limit=100`;
       const res = await apiRequest("GET", endpoint);
       const allSessions = res.sessions || [];
 
@@ -328,7 +333,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
                     <div className="text-sm text-muted-foreground">Grade: {session.score.grade}</div>
                   </div>
                 )}
-                <Link href={`/admin/student-answers/${session.id}`}>
+                <Link href={`/ admin / student - answers / ${session.id} `}>
                   <Button variant="outline" size="sm">
                     View Details
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -340,6 +345,327 @@ function StudentAnswersList({ testId }: { testId: string }) {
         </Card>
       ))}
     </div>
+  );
+}
+
+// Excel Export Dialog Component
+function ExcelExportDialog({
+  analytics,
+  testName,
+  sessions
+}: {
+  analytics: AnalyticsData;
+  testName: string;
+  sessions?: StudentSession[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [selectedFields, setSelectedFields] = useState({
+    totalSessions: true,
+    totalUsers: true,
+    activeUsers: true,
+    averageScores: true,
+    gradeDistribution: true,
+    dailyActivity: true,
+    studentSubmissions: true,
+  });
+
+  const [selectedColumns, setSelectedColumns] = useState({
+    username: true,
+    fullName: true,
+    testName: true,
+    completedAt: true,
+    totalScore: true,
+    grade: true,
+  });
+
+  const handleExport = () => {
+    const workbook = XLSX.utils.book_new();
+
+    // Summary Sheet
+    if (selectedFields.totalSessions || selectedFields.totalUsers || selectedFields.activeUsers || selectedFields.averageScores) {
+      const summaryData = [];
+
+      if (selectedFields.totalSessions) {
+        summaryData.push(['Total Sessions', analytics.totalSessions.toString()]);
+      }
+      if (selectedFields.totalUsers && analytics.totalUsers !== undefined) {
+        summaryData.push(['Total Users', analytics.totalUsers.toString()]);
+      }
+      if (selectedFields.activeUsers) {
+        summaryData.push(['Active Users', analytics.activeUsers.toString()]);
+      }
+      if (selectedFields.averageScores) {
+        summaryData.push(['', '']);
+        summaryData.push(['Average Scores', '']);
+        summaryData.push(['Grammar', `${analytics.averageScores.grammar}%`]);
+        summaryData.push(['Technical', `${analytics.averageScores.technical}%`]);
+        summaryData.push(['Depth', `${analytics.averageScores.depth}%`]);
+        summaryData.push(['Communication', `${analytics.averageScores.communication}%`]);
+        summaryData.push(['Total', `${analytics.averageScores.total}%`]);
+      }
+
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    }
+
+    // Grade Distribution Sheet
+    if (selectedFields.gradeDistribution) {
+      const gradeData = [
+        ['Grade', 'Count', 'Percentage'],
+      ];
+      const totalGrades = Object.values(analytics.gradeDistribution).reduce((sum, val) => sum + val, 0);
+
+      Object.entries(analytics.gradeDistribution).forEach(([grade, count]) => {
+        const percentage = totalGrades > 0 ? ((count / totalGrades) * 100).toFixed(1) : '0';
+        gradeData.push([grade, count.toString(), `${percentage}%`]);
+      });
+
+      const gradeSheet = XLSX.utils.aoa_to_sheet(gradeData);
+      XLSX.utils.book_append_sheet(workbook, gradeSheet, 'Grade Distribution');
+    }
+
+    // Daily Activity Sheet
+    if (selectedFields.dailyActivity && Object.keys(analytics.sessionsByDay).length > 0) {
+      const activityData = [
+        ['Date', 'Sessions'],
+      ];
+
+      Object.entries(analytics.sessionsByDay)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([date, count]) => {
+          activityData.push([date, count.toString()]);
+        });
+
+      const activitySheet = XLSX.utils.aoa_to_sheet(activityData);
+      XLSX.utils.book_append_sheet(workbook, activitySheet, 'Daily Activity');
+    }
+
+    // Student Submissions Sheet
+    if (selectedFields.studentSubmissions && sessions && sessions.length > 0) {
+      // Build header row based on selected columns
+      const headerRow = [];
+      if (selectedColumns.username) headerRow.push('Username');
+      if (selectedColumns.fullName) headerRow.push('Full Name');
+      if (selectedColumns.testName) headerRow.push('Test');
+      if (selectedColumns.completedAt) headerRow.push('Completed At');
+      if (selectedColumns.totalScore) headerRow.push('Total Score');
+      if (selectedColumns.grade) headerRow.push('Grade');
+
+      const submissionsData = [headerRow];
+
+      sessions.forEach((session) => {
+        const row = [];
+        if (selectedColumns.username) row.push(session.user.username);
+        if (selectedColumns.fullName) row.push(session.user.fullName || '');
+        if (selectedColumns.testName) row.push(session.testName || '');
+        if (selectedColumns.completedAt) row.push(session.completedAt ? new Date(session.completedAt).toLocaleString() : '');
+        if (selectedColumns.totalScore) row.push(session.score?.totalScore?.toString() || '');
+        if (selectedColumns.grade) row.push(session.score?.grade || '');
+
+        submissionsData.push(row);
+      });
+
+      const submissionsSheet = XLSX.utils.aoa_to_sheet(submissionsData);
+      XLSX.utils.book_append_sheet(workbook, submissionsSheet, 'Student Submissions');
+    }
+
+    // Generate filename
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `analytics-${testName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${date}.xlsx`;
+
+    // Download file
+    XLSX.writeFile(workbook, filename);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Export to Excel
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Export Analytics to Excel</DialogTitle>
+          <DialogDescription>
+            Select the fields you want to include in the Excel export
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="totalSessions"
+              checked={selectedFields.totalSessions}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, totalSessions: checked as boolean })
+              }
+            />
+            <Label htmlFor="totalSessions" className="cursor-pointer">
+              Total Sessions
+            </Label>
+          </div>
+
+          {analytics.totalUsers !== undefined && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="totalUsers"
+                checked={selectedFields.totalUsers}
+                onCheckedChange={(checked) =>
+                  setSelectedFields({ ...selectedFields, totalUsers: checked as boolean })
+                }
+              />
+              <Label htmlFor="totalUsers" className="cursor-pointer">
+                Total Users
+              </Label>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="activeUsers"
+              checked={selectedFields.activeUsers}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, activeUsers: checked as boolean })
+              }
+            />
+            <Label htmlFor="activeUsers" className="cursor-pointer">
+              Active Users
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="averageScores"
+              checked={selectedFields.averageScores}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, averageScores: checked as boolean })
+              }
+            />
+            <Label htmlFor="averageScores" className="cursor-pointer">
+              Average Scores (All Categories)
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="gradeDistribution"
+              checked={selectedFields.gradeDistribution}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, gradeDistribution: checked as boolean })
+              }
+            />
+            <Label htmlFor="gradeDistribution" className="cursor-pointer">
+              Grade Distribution
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="dailyActivity"
+              checked={selectedFields.dailyActivity}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, dailyActivity: checked as boolean })
+              }
+            />
+            <Label htmlFor="dailyActivity" className="cursor-pointer">
+              Daily Activity (Last 30 Days)
+            </Label>
+          </div>
+
+          {sessions && sessions.length > 0 && (
+            <div className="space-y-3 border rounded-md p-3 bg-muted/20">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="studentSubmissions"
+                  checked={selectedFields.studentSubmissions}
+                  onCheckedChange={(checked) =>
+                    setSelectedFields({ ...selectedFields, studentSubmissions: checked as boolean })
+                  }
+                />
+                <Label htmlFor="studentSubmissions" className="cursor-pointer font-medium">
+                  Student Submissions ({sessions.length} records)
+                </Label>
+              </div>
+
+              {selectedFields.studentSubmissions && (
+                <div className="ml-6 grid grid-cols-2 gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-username"
+                      checked={selectedColumns.username}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, username: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-username" className="text-sm cursor-pointer">Username</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-fullname"
+                      checked={selectedColumns.fullName}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, fullName: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-fullname" className="text-sm cursor-pointer">Full Name</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-test"
+                      checked={selectedColumns.testName}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, testName: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-test" className="text-sm cursor-pointer">Test Name</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-date"
+                      checked={selectedColumns.completedAt}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, completedAt: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-date" className="text-sm cursor-pointer">Date</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-score"
+                      checked={selectedColumns.totalScore}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, totalScore: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-score" className="text-sm cursor-pointer">Score</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-grade"
+                      checked={selectedColumns.grade}
+                      onCheckedChange={(checked) =>
+                        setSelectedColumns({ ...selectedColumns, grade: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="col-grade" className="text-sm cursor-pointer">Grade</Label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleExport}>
+            Export
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -372,7 +698,21 @@ export default function Analytics() {
     enabled: selectedTestId !== "all",
   });
 
+  // Fetch student sessions for export
+  const { data: allSessions } = useQuery<{ sessions: StudentSession[] }>({
+    queryKey: ["/api/admin/student-sessions"],
+    queryFn: async () => {
+      const data = await apiRequest("GET", "/api/admin/student-sessions?page=1&limit=1000");
+      return data;
+    },
+  });
+
   const selectedTest = tests?.find(t => t.id === selectedTestId);
+
+  // Filter sessions by selected test
+  const filteredSessions = selectedTestId === "all"
+    ? allSessions?.sessions
+    : allSessions?.sessions?.filter(s => s.testId === selectedTestId);
 
   // Filter tests based on search query only
   const filteredTests = tests?.filter((test) => {
@@ -436,7 +776,7 @@ export default function Analytics() {
                   <div className="font-medium">{test.name}</div>
                   <div className="text-sm text-muted-foreground">
                     {test.questionCount} questions
-                    {test.description && ` • ${test.description.substring(0, 60)}${test.description.length > 60 ? '...' : ''}`}
+                    {test.description && ` • ${test.description.substring(0, 60)}${test.description.length > 60 ? '...' : ''} `}
                   </div>
                 </button>
               ))}
@@ -481,6 +821,24 @@ export default function Analytics() {
         </TabsList>
 
         <TabsContent value="analytics" className="space-y-6">
+          {/* Export Button */}
+          <div className="flex justify-end">
+            {selectedTestId === "all" && generalAnalytics && (
+              <ExcelExportDialog
+                analytics={generalAnalytics}
+                testName="All Tests"
+                sessions={filteredSessions}
+              />
+            )}
+            {selectedTestId !== "all" && testAnalytics && (
+              <ExcelExportDialog
+                analytics={testAnalytics}
+                testName={selectedTest?.name || "Selected Test"}
+                sessions={filteredSessions}
+              />
+            )}
+          </div>
+
           {selectedTestId === "all" ? (
             <AnalyticsSection
               title="General Analytics"
@@ -501,7 +859,7 @@ export default function Analytics() {
                 </div>
               ) : testAnalytics ? (
                 <AnalyticsSection
-                  title={`Test Analytics: ${selectedTest?.name || 'Selected Test'}`}
+                  title={`Test Analytics: ${selectedTest?.name || 'Selected Test'} `}
                   description={selectedTest?.description || 'Performance metrics for this specific test'}
                   analytics={testAnalytics}
                   showTotalUsers={false}
