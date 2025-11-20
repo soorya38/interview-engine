@@ -73,6 +73,7 @@ export interface IStorage {
   // Admin
   getPaginatedStudentSessions(page: number, limit: number): Promise<{ sessions: any[], total: number }>;
   getAdminAnalytics(): Promise<any>;
+  getTestAnalytics(testId: string): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -329,6 +330,90 @@ export class DatabaseStorage implements IStorage {
     return {
       totalSessions: totalSessions?.count || 0,
       totalUsers: totalUsers?.count || 0,
+      activeUsers: activeUsers?.count || 0,
+      averageScores: {
+        grammar: Math.round(Number(avgScores?.grammar || 0)),
+        technical: Math.round(Number(avgScores?.technical || 0)),
+        depth: Math.round(Number(avgScores?.depth || 0)),
+        communication: Math.round(Number(avgScores?.communication || 0)),
+        total: Math.round(Number(avgScores?.total || 0)),
+      },
+      gradeDistribution: gradeDistMap,
+      sessionsByDay: sessionsByDayMap,
+    };
+  }
+
+  async getTestAnalytics(testId: string): Promise<any> {
+    // Total sessions for this test
+    const [totalSessions] = await db.select({ count: count() })
+      .from(interviewSessions)
+      .where(and(
+        eq(interviewSessions.testId, testId),
+        eq(interviewSessions.status, "completed")
+      ));
+
+    // Active users (users who have completed this test)
+    const [activeUsers] = await db.select({ count: count(sql`DISTINCT ${interviewSessions.userId}`) })
+      .from(interviewSessions)
+      .where(and(
+        eq(interviewSessions.testId, testId),
+        eq(interviewSessions.status, "completed")
+      ));
+
+    // Average scores for this test
+    const [avgScores] = await db.select({
+      grammar: sql<number>`AVG(${scores.grammarScore})`,
+      technical: sql<number>`AVG(${scores.technicalScore})`,
+      depth: sql<number>`AVG(${scores.depthScore})`,
+      communication: sql<number>`AVG(${scores.communicationScore})`,
+      total: sql<number>`AVG(${scores.totalScore})`,
+    })
+      .from(scores)
+      .innerJoin(interviewSessions, eq(scores.sessionId, interviewSessions.id))
+      .where(eq(interviewSessions.testId, testId));
+
+    // Grade distribution for this test
+    const gradeDistribution = await db.select({
+      grade: scores.grade,
+      count: count(),
+    })
+      .from(scores)
+      .innerJoin(interviewSessions, eq(scores.sessionId, interviewSessions.id))
+      .where(eq(interviewSessions.testId, testId))
+      .groupBy(scores.grade);
+
+    const gradeDistMap = {
+      A: 0, B: 0, C: 0, D: 0, F: 0
+    };
+    gradeDistribution.forEach((g) => {
+      if (g.grade && g.grade in gradeDistMap) {
+        gradeDistMap[g.grade as keyof typeof gradeDistMap] = g.count;
+      }
+    });
+
+    // Sessions by day for this test (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sessionsByDay = await db.select({
+      date: sql<string>`DATE(${interviewSessions.completedAt})`,
+      count: count(),
+    })
+      .from(interviewSessions)
+      .where(and(
+        eq(interviewSessions.testId, testId),
+        eq(interviewSessions.status, "completed"),
+        sql`${interviewSessions.completedAt} >= ${thirtyDaysAgo.toISOString()}`
+      ))
+      .groupBy(sql`DATE(${interviewSessions.completedAt})`);
+
+    const sessionsByDayMap: Record<string, number> = {};
+    sessionsByDay.forEach((s) => {
+      sessionsByDayMap[s.date] = s.count;
+    });
+
+    return {
+      totalSessions: totalSessions?.count || 0,
       activeUsers: activeUsers?.count || 0,
       averageScores: {
         grammar: Math.round(Number(avgScores?.grammar || 0)),

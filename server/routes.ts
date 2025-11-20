@@ -785,6 +785,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/analytics/test/:testId", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { testId } = req.params;
+
+      // Verify test exists
+      const test = await storage.getTest(testId);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+
+      const analytics = await storage.getTestAnalytics(testId);
+      res.json(analytics);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Profile routes
   app.get("/api/profile", authMiddleware, async (req, res) => {
     try {

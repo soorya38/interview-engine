@@ -68,11 +68,6 @@ export function AppSidebar() {
       icon: Users,
     },
     {
-      title: "Student Answers",
-      url: "/admin/student-answers",
-      icon: MessageSquare,
-    },
-    {
       title: "Analytics",
       url: "/admin/analytics",
       icon: BarChart3,
