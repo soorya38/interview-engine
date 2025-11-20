@@ -10,7 +10,8 @@ import {
   BarChart3,
   FileText,
   ArrowRight,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
@@ -21,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import * as XLSX from 'xlsx';
+import { useToast } from "@/hooks/use-toast";
 
 type AnalyticsData = {
   totalSessions: number;
@@ -352,13 +354,18 @@ function StudentAnswersList({ testId }: { testId: string }) {
 function ExcelExportDialog({
   analytics,
   testName,
-  sessions
+  sessions,
+  testId
 }: {
   analytics: AnalyticsData;
   testName: string;
   sessions?: StudentSession[];
+  testId: string;
 }) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [selectedFields, setSelectedFields] = useState({
     totalSessions: true,
     totalUsers: true,
@@ -367,6 +374,7 @@ function ExcelExportDialog({
     gradeDistribution: true,
     dailyActivity: true,
     studentSubmissions: true,
+    detailedAnswers: false,
   });
 
   const [selectedColumns, setSelectedColumns] = useState({
@@ -378,108 +386,168 @@ function ExcelExportDialog({
     grade: true,
   });
 
-  const handleExport = () => {
-    const workbook = XLSX.utils.book_new();
+  const handleExport = async () => {
+    setIsExporting(true);
+    setProgress(10);
 
-    // Summary Sheet
-    if (selectedFields.totalSessions || selectedFields.totalUsers || selectedFields.activeUsers || selectedFields.averageScores) {
-      const summaryData = [];
+    try {
+      // Small delay to allow UI to update
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      if (selectedFields.totalSessions) {
-        summaryData.push(['Total Sessions', analytics.totalSessions.toString()]);
+      const workbook = XLSX.utils.book_new();
+
+      // Summary Sheet
+      if (selectedFields.totalSessions || selectedFields.totalUsers || selectedFields.activeUsers || selectedFields.averageScores) {
+        const summaryData = [];
+
+        if (selectedFields.totalSessions) {
+          summaryData.push(['Total Sessions', analytics.totalSessions.toString()]);
+        }
+        if (selectedFields.totalUsers && analytics.totalUsers !== undefined) {
+          summaryData.push(['Total Users', analytics.totalUsers.toString()]);
+        }
+        if (selectedFields.activeUsers) {
+          summaryData.push(['Active Users', analytics.activeUsers.toString()]);
+        }
+        if (selectedFields.averageScores) {
+          summaryData.push(['', '']);
+          summaryData.push(['Average Scores', '']);
+          summaryData.push(['Grammar', `${analytics.averageScores.grammar}%`]);
+          summaryData.push(['Technical', `${analytics.averageScores.technical}%`]);
+          summaryData.push(['Depth', `${analytics.averageScores.depth}%`]);
+          summaryData.push(['Communication', `${analytics.averageScores.communication}%`]);
+          summaryData.push(['Total', `${analytics.averageScores.total}%`]);
+        }
+
+        const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
       }
-      if (selectedFields.totalUsers && analytics.totalUsers !== undefined) {
-        summaryData.push(['Total Users', analytics.totalUsers.toString()]);
-      }
-      if (selectedFields.activeUsers) {
-        summaryData.push(['Active Users', analytics.activeUsers.toString()]);
-      }
-      if (selectedFields.averageScores) {
-        summaryData.push(['', '']);
-        summaryData.push(['Average Scores', '']);
-        summaryData.push(['Grammar', `${analytics.averageScores.grammar}%`]);
-        summaryData.push(['Technical', `${analytics.averageScores.technical}%`]);
-        summaryData.push(['Depth', `${analytics.averageScores.depth}%`]);
-        summaryData.push(['Communication', `${analytics.averageScores.communication}%`]);
-        summaryData.push(['Total', `${analytics.averageScores.total}%`]);
-      }
 
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-    }
+      setProgress(30);
 
-    // Grade Distribution Sheet
-    if (selectedFields.gradeDistribution) {
-      const gradeData = [
-        ['Grade', 'Count', 'Percentage'],
-      ];
-      const totalGrades = Object.values(analytics.gradeDistribution).reduce((sum, val) => sum + val, 0);
+      // Grade Distribution Sheet
+      if (selectedFields.gradeDistribution) {
+        const gradeData = [
+          ['Grade', 'Count', 'Percentage'],
+        ];
+        const totalGrades = Object.values(analytics.gradeDistribution).reduce((sum, val) => sum + val, 0);
 
-      Object.entries(analytics.gradeDistribution).forEach(([grade, count]) => {
-        const percentage = totalGrades > 0 ? ((count / totalGrades) * 100).toFixed(1) : '0';
-        gradeData.push([grade, count.toString(), `${percentage}%`]);
-      });
-
-      const gradeSheet = XLSX.utils.aoa_to_sheet(gradeData);
-      XLSX.utils.book_append_sheet(workbook, gradeSheet, 'Grade Distribution');
-    }
-
-    // Daily Activity Sheet
-    if (selectedFields.dailyActivity && Object.keys(analytics.sessionsByDay).length > 0) {
-      const activityData = [
-        ['Date', 'Sessions'],
-      ];
-
-      Object.entries(analytics.sessionsByDay)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([date, count]) => {
-          activityData.push([date, count.toString()]);
+        Object.entries(analytics.gradeDistribution).forEach(([grade, count]) => {
+          const percentage = totalGrades > 0 ? ((count / totalGrades) * 100).toFixed(1) : '0';
+          gradeData.push([grade, count.toString(), `${percentage}%`]);
         });
 
-      const activitySheet = XLSX.utils.aoa_to_sheet(activityData);
-      XLSX.utils.book_append_sheet(workbook, activitySheet, 'Daily Activity');
-    }
+        const gradeSheet = XLSX.utils.aoa_to_sheet(gradeData);
+        XLSX.utils.book_append_sheet(workbook, gradeSheet, 'Grade Distribution');
+      }
 
-    // Student Submissions Sheet
-    if (selectedFields.studentSubmissions && sessions && sessions.length > 0) {
-      // Build header row based on selected columns
-      const headerRow = [];
-      if (selectedColumns.username) headerRow.push('Username');
-      if (selectedColumns.fullName) headerRow.push('Full Name');
-      if (selectedColumns.testName) headerRow.push('Test');
-      if (selectedColumns.completedAt) headerRow.push('Completed At');
-      if (selectedColumns.totalScore) headerRow.push('Total Score');
-      if (selectedColumns.grade) headerRow.push('Grade');
+      // Daily Activity Sheet
+      if (selectedFields.dailyActivity && Object.keys(analytics.sessionsByDay).length > 0) {
+        const activityData = [
+          ['Date', 'Sessions'],
+        ];
 
-      const submissionsData = [headerRow];
+        Object.entries(analytics.sessionsByDay)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([date, count]) => {
+            activityData.push([date, count.toString()]);
+          });
 
-      sessions.forEach((session) => {
-        const row = [];
-        if (selectedColumns.username) row.push(session.user.username);
-        if (selectedColumns.fullName) row.push(session.user.fullName || '');
-        if (selectedColumns.testName) row.push(session.testName || '');
-        if (selectedColumns.completedAt) row.push(session.completedAt ? new Date(session.completedAt).toLocaleString() : '');
-        if (selectedColumns.totalScore) row.push(session.score?.totalScore?.toString() || '');
-        if (selectedColumns.grade) row.push(session.score?.grade || '');
+        const activitySheet = XLSX.utils.aoa_to_sheet(activityData);
+        XLSX.utils.book_append_sheet(workbook, activitySheet, 'Daily Activity');
+      }
 
-        submissionsData.push(row);
+      setProgress(50);
+
+      // Student Submissions Sheet
+      if (selectedFields.studentSubmissions && sessions && sessions.length > 0) {
+        // Build header row based on selected columns
+        const headerRow = [];
+        if (selectedColumns.username) headerRow.push('Username');
+        if (selectedColumns.fullName) headerRow.push('Full Name');
+        if (selectedColumns.testName) headerRow.push('Test');
+        if (selectedColumns.completedAt) headerRow.push('Completed At');
+        if (selectedColumns.totalScore) headerRow.push('Total Score');
+        if (selectedColumns.grade) headerRow.push('Grade');
+
+        const submissionsData = [headerRow];
+
+        sessions.forEach((session) => {
+          const row = [];
+          if (selectedColumns.username) row.push(session.user.username);
+          if (selectedColumns.fullName) row.push(session.user.fullName || '');
+          if (selectedColumns.testName) row.push(session.testName || '');
+          if (selectedColumns.completedAt) row.push(session.completedAt ? new Date(session.completedAt).toLocaleString() : '');
+          if (selectedColumns.totalScore) row.push(session.score?.totalScore?.toString() || '');
+          if (selectedColumns.grade) row.push(session.score?.grade || '');
+
+          submissionsData.push(row);
+        });
+
+        const submissionsSheet = XLSX.utils.aoa_to_sheet(submissionsData);
+        XLSX.utils.book_append_sheet(workbook, submissionsSheet, 'Student Submissions');
+      }
+
+      // Detailed Answers Sheet
+      if (selectedFields.detailedAnswers) {
+        setProgress(60);
+        const detailedData = await apiRequest("GET", `/api/admin/export-data?testId=${testId}`);
+        setProgress(80);
+
+        const rows = [['Session ID', 'Username', 'Full Name', 'Test', 'Date', 'Question', 'Answer', 'AI Feedback', 'Grade']];
+        detailedData.forEach((row: any) => {
+          rows.push([
+            row.sessionId,
+            row.username,
+            row.fullName || '',
+            row.testName,
+            new Date(row.completedAt).toLocaleString(),
+            row.questionText,
+            row.userAnswer,
+            row.aiResponse,
+            row.grade || ''
+          ]);
+        });
+
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(workbook, sheet, 'Detailed Answers');
+      }
+
+      setProgress(90);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Generate filename
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `analytics-${testName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${date}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(workbook, filename);
+
+      setProgress(100);
+      toast({
+        title: "Export Successful",
+        description: "Your Excel file has been downloaded.",
       });
 
-      const submissionsSheet = XLSX.utils.aoa_to_sheet(submissionsData);
-      XLSX.utils.book_append_sheet(workbook, submissionsSheet, 'Student Submissions');
+      setTimeout(() => {
+        setOpen(false);
+        setProgress(0);
+      }, 1000);
+
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating the Excel file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
-
-    // Generate filename
-    const date = new Date().toISOString().split('T')[0];
-    const filename = `analytics-${testName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${date}.xlsx`;
-
-    // Download file
-    XLSX.writeFile(workbook, filename);
-    setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(val) => !isExporting && setOpen(val)}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
@@ -493,7 +561,18 @@ function ExcelExportDialog({
             Select the fields you want to include in the Excel export
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+
+        {isExporting && (
+          <div className="py-4 space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Exporting data...</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        <div className={`space-y-4 py-4 ${isExporting ? 'opacity-50 pointer-events-none' : ''}`}>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="totalSessions"
@@ -655,12 +734,26 @@ function ExcelExportDialog({
               )}
             </div>
           )}
+
+          <div className="flex items-center space-x-2 border-t pt-4">
+            <Checkbox
+              id="detailedAnswers"
+              checked={selectedFields.detailedAnswers}
+              onCheckedChange={(checked) =>
+                setSelectedFields({ ...selectedFields, detailedAnswers: checked as boolean })
+              }
+            />
+            <Label htmlFor="detailedAnswers" className="cursor-pointer font-medium">
+              Include Detailed Answers (Questions & Responses)
+            </Label>
+          </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isExporting}>
             Cancel
           </Button>
-          <Button onClick={handleExport}>
+          <Button onClick={handleExport} disabled={isExporting}>
+            {isExporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Export
           </Button>
         </DialogFooter>
@@ -828,13 +921,15 @@ export default function Analytics() {
                 analytics={generalAnalytics}
                 testName="All Tests"
                 sessions={filteredSessions}
+                testId={selectedTestId}
               />
             )}
             {selectedTestId !== "all" && testAnalytics && (
               <ExcelExportDialog
                 analytics={testAnalytics}
-                testName={selectedTest?.name || "Selected Test"}
+                testName={selectedTest?.name || "Test"}
                 sessions={filteredSessions}
+                testId={selectedTestId}
               />
             )}
           </div>

@@ -798,6 +798,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analytics = await storage.getTestAnalytics(testId);
       res.json(analytics);
     } catch (error: any) {
+      console.error("Export data error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/export-data", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const testId = req.query.testId as string;
+      const data = await storage.getExportData(testId);
+      res.json(data);
+    } catch (error: any) {
+      console.error("Export data error:", error);
       res.status(500).json({ error: error.message });
     }
   });

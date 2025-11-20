@@ -23,7 +23,7 @@ import {
   type InsertScore,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, count } from "drizzle-orm";
+import { eq, desc, and, sql, count, inArray, type SQL } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -344,87 +344,114 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTestAnalytics(testId: string): Promise<any> {
-    // Total sessions for this test
-    const [totalSessions] = await db.select({ count: count() })
+    const sessions = await db.select()
       .from(interviewSessions)
       .where(and(
         eq(interviewSessions.testId, testId),
         eq(interviewSessions.status, "completed")
       ));
 
-    // Active users (users who have completed this test)
-    const [activeUsers] = await db.select({ count: count(sql`DISTINCT ${interviewSessions.userId}`) })
-      .from(interviewSessions)
-      .where(and(
-        eq(interviewSessions.testId, testId),
-        eq(interviewSessions.status, "completed")
-      ));
+    const totalSessions = sessions.length;
+    const activeUsers = new Set(sessions.map(s => s.userId)).size;
 
-    // Average scores for this test
-    const [avgScores] = await db.select({
-      grammar: sql<number>`AVG(${scores.grammarScore})`,
-      technical: sql<number>`AVG(${scores.technicalScore})`,
-      depth: sql<number>`AVG(${scores.depthScore})`,
-      communication: sql<number>`AVG(${scores.communicationScore})`,
-      total: sql<number>`AVG(${scores.totalScore})`,
-    })
+    // Calculate average scores
+    const sessionScores = await db.select()
       .from(scores)
-      .innerJoin(interviewSessions, eq(scores.sessionId, interviewSessions.id))
-      .where(eq(interviewSessions.testId, testId));
+      .where(inArray(scores.sessionId, sessions.map(s => s.id)));
 
-    // Grade distribution for this test
-    const gradeDistribution = await db.select({
-      grade: scores.grade,
-      count: count(),
-    })
-      .from(scores)
-      .innerJoin(interviewSessions, eq(scores.sessionId, interviewSessions.id))
-      .where(eq(interviewSessions.testId, testId))
-      .groupBy(scores.grade);
-
-    const gradeDistMap = {
-      A: 0, B: 0, C: 0, D: 0, F: 0
+    const averageScores = {
+      grammar: 0,
+      technical: 0,
+      depth: 0,
+      communication: 0,
+      total: 0,
     };
-    gradeDistribution.forEach((g) => {
-      if (g.grade && g.grade in gradeDistMap) {
-        gradeDistMap[g.grade as keyof typeof gradeDistMap] = g.count;
-      }
-    });
 
-    // Sessions by day for this test (last 30 days)
+    const gradeDistribution = {
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0,
+      F: 0,
+    };
+
+    if (sessionScores.length > 0) {
+      sessionScores.forEach(score => {
+        averageScores.grammar += score.grammarScore;
+        averageScores.technical += score.technicalScore;
+        averageScores.depth += score.depthScore;
+        averageScores.communication += score.communicationScore;
+        averageScores.total += score.totalScore;
+
+        if (score.grade && score.grade in gradeDistribution) {
+          gradeDistribution[score.grade as keyof typeof gradeDistribution]++;
+        }
+      });
+
+      averageScores.grammar = Math.round(averageScores.grammar / sessionScores.length);
+      averageScores.technical = Math.round(averageScores.technical / sessionScores.length);
+      averageScores.depth = Math.round(averageScores.depth / sessionScores.length);
+      averageScores.communication = Math.round(averageScores.communication / sessionScores.length);
+      averageScores.total = Math.round(averageScores.total / sessionScores.length);
+    }
+
+    // Calculate sessions by day
+    const sessionsByDay: Record<string, number> = {};
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const sessionsByDay = await db.select({
-      date: sql<string>`DATE(${interviewSessions.completedAt})`,
-      count: count(),
-    })
-      .from(interviewSessions)
-      .where(and(
-        eq(interviewSessions.testId, testId),
-        eq(interviewSessions.status, "completed"),
-        sql`${interviewSessions.completedAt} >= ${thirtyDaysAgo.toISOString()}`
-      ))
-      .groupBy(sql`DATE(${interviewSessions.completedAt})`);
-
-    const sessionsByDayMap: Record<string, number> = {};
-    sessionsByDay.forEach((s) => {
-      sessionsByDayMap[s.date] = s.count;
+    sessions.forEach(session => {
+      if (session.completedAt && new Date(session.completedAt) >= thirtyDaysAgo) {
+        const date = new Date(session.completedAt).toISOString().split('T')[0];
+        sessionsByDay[date] = (sessionsByDay[date] || 0) + 1;
+      }
     });
 
     return {
-      totalSessions: totalSessions?.count || 0,
-      activeUsers: activeUsers?.count || 0,
-      averageScores: {
-        grammar: Math.round(Number(avgScores?.grammar || 0)),
-        technical: Math.round(Number(avgScores?.technical || 0)),
-        depth: Math.round(Number(avgScores?.depth || 0)),
-        communication: Math.round(Number(avgScores?.communication || 0)),
-        total: Math.round(Number(avgScores?.total || 0)),
-      },
-      gradeDistribution: gradeDistMap,
-      sessionsByDay: sessionsByDayMap,
+      totalSessions,
+      activeUsers,
+      averageScores,
+      gradeDistribution,
+      sessionsByDay,
     };
+  }
+
+  async getExportData(testId?: string) {
+    const conditions: SQL<unknown>[] = [eq(interviewSessions.status, "completed")];
+
+    if (testId && testId !== "all") {
+      // Simple UUID validation to prevent DB errors
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testId);
+      if (isValidUUID) {
+        conditions.push(eq(interviewSessions.testId, testId));
+      }
+    }
+
+    const result = await db.select({
+      sessionId: interviewSessions.id,
+      username: users.username,
+      fullName: users.fullName,
+      email: users.email,
+      testName: tests.name,
+      completedAt: interviewSessions.completedAt,
+      totalScore: scores.totalScore,
+      grade: scores.grade,
+      questionText: questions.questionText,
+      userAnswer: interviewTurns.userAnswer,
+      aiResponse: interviewTurns.aiResponse,
+      turnEvaluation: interviewTurns.evaluation,
+      turnNumber: interviewTurns.turnNumber,
+    })
+      .from(interviewSessions)
+      .innerJoin(users, eq(interviewSessions.userId, users.id))
+      .innerJoin(tests, eq(interviewSessions.testId, tests.id))
+      .leftJoin(scores, eq(interviewSessions.id, scores.sessionId))
+      .innerJoin(interviewTurns, eq(interviewSessions.id, interviewTurns.sessionId))
+      .innerJoin(questions, eq(interviewTurns.questionId, questions.id))
+      .where(and(...conditions))
+      .orderBy(desc(interviewSessions.completedAt), interviewTurns.turnNumber);
+
+    return result;
   }
 }
 
