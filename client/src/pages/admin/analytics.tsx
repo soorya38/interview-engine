@@ -324,7 +324,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
               <div className="flex items-center gap-4">
                 {session.score && (
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-emerald-600">{session.score.totalScore}%</div>
+                    <div className="text-2xl font-bold text-primary">{session.score.totalScore}%</div>
                     <div className="text-sm text-muted-foreground">Grade: {session.score.grade}</div>
                   </div>
                 )}
@@ -410,62 +410,60 @@ export default function Analytics() {
         <p className="text-muted-foreground">Platform performance and student statistics</p>
       </div>
 
-      {/* Test Selection with Search */}
-      <Card className="border-emerald-200 dark:border-emerald-800">
-        <CardHeader>
-          <CardTitle>Select Test</CardTitle>
-          <CardDescription>Choose a test to view specific analytics or view general platform analytics</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Input */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search tests by name or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-emerald-300 dark:border-emerald-700 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 bg-background"
-              />
-            </div>
-          </div>
+      {/* Test Selection */}
+      <div className="flex items-start gap-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Search tests..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          />
 
-          {/* Test Dropdown */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Selected Test:</label>
-            <select
-              value={selectedTestId}
-              onChange={(e) => setSelectedTestId(e.target.value)}
-              className="w-full px-4 py-2 border border-emerald-300 dark:border-emerald-700 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 bg-background"
-            >
-              <option value="all">All Tests (General Analytics)</option>
+          {/* Search Suggestions */}
+          {searchQuery && filteredTests.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
               {filteredTests.map((test) => (
-                <option key={test.id} value={test.id}>
-                  {test.name} - {test.questionCount} questions
-                </option>
+                <button
+                  key={test.id}
+                  onClick={() => {
+                    setSelectedTestId(test.id);
+                    setSearchQuery("");
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors border-b last:border-b-0"
+                >
+                  <div className="font-medium">{test.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {test.questionCount} questions
+                    {test.description && ` • ${test.description.substring(0, 60)}${test.description.length > 60 ? '...' : ''}`}
+                  </div>
+                </button>
               ))}
-            </select>
-            {filteredTests.length === 0 && searchQuery && (
-              <p className="text-sm text-muted-foreground">No tests match your search criteria</p>
-            )}
-          </div>
-
-          {/* Selected Test Info */}
-          {selectedTestId !== "all" && selectedTest && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-md border border-emerald-200 dark:border-emerald-800">
-              <h3 className="font-semibold mb-1">{selectedTest.name}</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                {selectedTest.description || "No description available"}
-              </p>
-              <div className="flex gap-4 text-sm">
-                <span className="text-muted-foreground">
-                  <strong>Questions:</strong> {selectedTest.questionCount}
-                </span>
-              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          {searchQuery && filteredTests.length === 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg p-4">
+              <p className="text-sm text-muted-foreground">No tests match your search</p>
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
+          <select
+            value={selectedTestId}
+            onChange={(e) => setSelectedTestId(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+          >
+            <option value="all">All Tests (General Analytics)</option>
+            {filteredTests.map((test) => (
+              <option key={test.id} value={test.id}>
+                {test.name} - {test.questionCount} questions
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className="border-t pt-8" />
 
