@@ -57,8 +57,8 @@ export default function Results() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Score not available</p>
-          <Button onClick={() => setLocation("/dashboard")}>
-            Back to Dashboard
+          <Button onClick={() => setLocation("/history")}>
+            Back to History
           </Button>
         </div>
       </div>
@@ -190,11 +190,11 @@ export default function Results() {
                 const questionNumber = index + 1;
                 const totalScore = evalData
                   ? Math.round(
-                      evalData.technical * 0.5 +
-                      evalData.communication * 0.2 +
-                      evalData.depth * 0.15 +
-                      evalData.grammar * 0.15
-                    )
+                    evalData.technical * 0.5 +
+                    evalData.communication * 0.2 +
+                    evalData.depth * 0.15 +
+                    evalData.grammar * 0.15
+                  )
                   : 0;
 
                 return (
@@ -222,7 +222,7 @@ export default function Results() {
                           <p className="text-base leading-relaxed">{turn.question.questionText}</p>
                         </div>
                       )}
-                      
+
                       <div>
                         <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Your Answer:</h4>
                         <p className="text-base leading-relaxed bg-muted/50 p-4 rounded-lg">
@@ -388,8 +388,8 @@ export default function Results() {
       )}
 
       <div className="flex gap-4 justify-center pt-4">
-        <Button variant="outline" onClick={() => setLocation("/dashboard")} data-testid="button-dashboard">
-          Back to Dashboard
+        <Button variant="outline" onClick={() => setLocation("/history")} data-testid="button-history">
+          Back to History
         </Button>
         <Button onClick={() => setLocation("/tests")} data-testid="button-new-test">
           <ArrowRight className="h-4 w-4 mr-2" />

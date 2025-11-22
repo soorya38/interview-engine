@@ -210,7 +210,7 @@ export default function Interview() {
         title: "Test ended",
         description: "You have successfully quit the test.",
       });
-      setLocation("/tests");
+      setLocation(`/results/${sessionId}`);
     },
     onError: (error: any) => {
       toast({
@@ -303,10 +303,10 @@ export default function Interview() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-slate-400">Connecting to interview session...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Connecting to interview session...</p>
         </div>
       </div>
     );
@@ -314,9 +314,9 @@ export default function Interview() {
 
   if (!session) {
     return (
-      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-400 mb-4">Session not found</p>
+          <p className="text-muted-foreground mb-4">Session not found</p>
           <Button onClick={() => setLocation("/tests")} variant="secondary">
             Back to Tests
           </Button>
@@ -326,17 +326,17 @@ export default function Interview() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-950 flex flex-col text-slate-200 font-sans">
+    <div className="h-screen w-screen overflow-hidden bg-background flex flex-col text-foreground font-sans">
       {/* Header */}
-      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
+      <div className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-          <span className="font-medium text-sm text-slate-300">Live Interview Session</span>
-          <span className="text-slate-600 text-xs">|</span>
-          <span className="text-xs text-slate-500 font-mono">ID: {sessionId?.slice(0, 8)}</span>
+          <div className="w-2 h-2 rounded-full bg-destructive animate-pulse"></div>
+          <span className="font-medium text-sm">Live Interview Session</span>
+          <span className="text-muted-foreground text-xs">|</span>
+          <span className="text-xs text-muted-foreground font-mono">ID: {sessionId?.slice(0, 8)}</span>
         </div>
 
-        <div className="text-xs font-mono text-slate-500">
+        <div className="text-xs font-mono text-muted-foreground">
           Question {session.currentQuestionIndex + 1} / {session.totalQuestions}
         </div>
       </div>
@@ -344,8 +344,8 @@ export default function Interview() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
-        {/* Left Stage - Interviewer */}
-        <div className="h-[40vh] md:h-auto md:flex-1 relative flex flex-col items-center justify-center bg-[#121212] p-4 md:p-8">
+        {/* Left Stage - Interviewer (Keep dark for video feel) */}
+        <div className="h-[40vh] md:h-auto md:flex-1 relative flex flex-col items-center justify-center bg-black p-4 md:p-8">
 
           {/* Agent Container */}
           <div className="relative transform scale-75 md:scale-125 transition-transform duration-500">
@@ -354,8 +354,8 @@ export default function Interview() {
 
           {/* Captions Overlay */}
           <div className="absolute bottom-4 md:bottom-8 left-0 right-0 px-4 md:px-8 flex justify-center">
-            <div className="bg-black/60 backdrop-blur-md p-3 md:p-6 rounded-2xl max-w-3xl w-full border border-white/5 shadow-2xl transition-all duration-300 hover:bg-black/70">
-              <h3 className="text-[10px] md:text-xs uppercase tracking-widest text-blue-400 mb-1 md:mb-2 font-bold">
+            <div className="bg-black/60 backdrop-blur-md p-3 md:p-6 rounded-2xl max-w-3xl w-full border border-white/10 shadow-2xl transition-all duration-300 hover:bg-black/70">
+              <h3 className="text-[10px] md:text-xs uppercase tracking-widest text-primary mb-1 md:mb-2 font-bold">
                 {interviewerGender === 'male' ? 'Alex' : 'Sarah'}
               </h3>
               <p className="text-sm md:text-xl leading-relaxed text-white font-medium line-clamp-3 md:line-clamp-none">
@@ -366,109 +366,112 @@ export default function Interview() {
         </div>
 
         {/* Right Sidebar - Chat/Answer */}
-        <div className="flex-1 md:flex-none w-full md:w-96 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shadow-2xl z-20">
-          <div className="p-3 md:p-4 border-b border-slate-800 bg-slate-900 flex items-center justify-between shrink-0">
-            <h2 className="font-semibold text-sm text-slate-200 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-blue-400" />
+        <div className="flex-1 md:flex-none w-full md:w-96 bg-card border-t md:border-t-0 md:border-l border-border flex flex-col shadow-2xl z-20">
+          <div className="p-3 md:p-4 border-b border-border bg-card flex items-center justify-between shrink-0">
+            <h2 className="font-semibold text-sm flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
               Your Response
             </h2>
             {isListening && (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-orange-400 font-mono">
+                <span className="text-xs font-bold text-orange-500 font-mono">
                   {countdown > 0 ? `${countdown}s` : ''}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-900/30 px-2 py-1 rounded-full border border-green-500/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
                   Listening
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex-1 p-3 md:p-4 flex flex-col gap-2 overflow-y-auto bg-slate-950/30 min-h-0">
+          <div className="flex-1 p-3 md:p-4 flex flex-col gap-2 overflow-y-auto bg-muted/30 min-h-0">
             <div className="flex-1 relative">
               <Textarea
                 value={answer}
                 onChange={handleAnswerChange}
                 onFocus={handleManualEdit}
                 placeholder={isSpeaking ? "Listening to question..." : "Type your answer here..."}
-                className="w-full h-full resize-none bg-transparent border-0 focus:ring-0 text-slate-300 p-0 text-sm leading-relaxed placeholder:text-slate-600"
+                className="w-full h-full resize-none bg-transparent border-0 focus:ring-0 text-foreground p-0 text-sm leading-relaxed placeholder:text-muted-foreground"
                 disabled={submitAnswerMutation.isPending}
               />
 
               {/* Interim Transcript Overlay */}
               {interimTranscript && (
-                <div className="absolute bottom-0 left-0 right-0 p-2 bg-blue-900/20 border-t border-blue-500/20 text-blue-200 text-xs italic">
+                <div className="absolute bottom-0 left-0 right-0 p-2 bg-primary/10 border-t border-primary/20 text-primary text-xs italic">
                   {interimTranscript}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="p-2 md:p-4 border-t border-slate-800 bg-slate-900 text-[10px] md:text-xs text-slate-500 text-center hidden md:block shrink-0">
+          <div className="p-2 md:p-4 border-t border-border bg-card text-[10px] md:text-xs text-muted-foreground text-center hidden md:block shrink-0">
             {isListening ? "Speak clearly into your microphone" : "Type or use voice to answer"}
           </div>
         </div>
       </div>
 
       {/* Bottom Control Bar */}
-      <div className="h-20 bg-slate-900 border-t border-slate-800 flex items-center justify-center gap-4 px-8 relative z-30 shrink-0">
+      <div className="h-20 bg-card border-t border-border flex items-center justify-center gap-4 px-8 relative z-30 shrink-0">
 
         {/* Ask Again Button */}
-        <button
+        <Button
+          variant="outline"
+          size="icon"
           onClick={handleAskAgain}
           disabled={isSpeaking}
-          className="h-12 w-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all border border-slate-700 disabled:opacity-50"
+          className="h-12 w-12 rounded-full"
           title="Ask Question Again"
         >
           <RefreshCw className={`w-5 h-5 ${isSpeaking ? 'animate-spin' : ''}`} />
-        </button>
+        </Button>
 
         {/* Mic Toggle */}
-        <button
+        <Button
+          variant={isListening ? "secondary" : "destructive"}
+          size="icon"
           onClick={isListening ? handleStopListening : handleStartListening}
-          className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-200 ${isListening
-            ? 'bg-slate-700 text-white hover:bg-slate-600'
-            : 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20'
-            }`}
+          className={`h-12 w-12 rounded-full shadow-lg ${!isListening && 'shadow-red-500/20'}`}
           title={isListening ? "Mute Microphone" : "Unmute Microphone"}
         >
           {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-        </button>
+        </Button>
 
         {/* Submit Button */}
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={!answer.trim() || submitAnswerMutation.isPending}
-          className="h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+          className="h-12 px-8 rounded-full shadow-lg shadow-primary/20"
         >
           {submitAnswerMutation.isPending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
           ) : (
-            <SendHorizontal className="w-5 h-5" />
+            <SendHorizontal className="w-5 h-5 mr-2" />
           )}
           <span>Submit Answer</span>
-        </button>
+        </Button>
 
         {/* Settings / Gender Selection */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
-              className="h-12 w-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all ml-4 border border-slate-700"
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 rounded-full ml-4"
               title="Settings"
             >
               <Settings className="w-5 h-5" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200 w-56">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Select Interviewer</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-slate-800" />
-            <DropdownMenuItem onClick={() => setInterviewerGender('male')} className="hover:bg-slate-800 cursor-pointer flex items-center justify-between">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setInterviewerGender('male')} className="cursor-pointer flex items-center justify-between">
               <span>Alex</span>
-              {interviewerGender === 'male' && <Check className="w-4 h-4 text-blue-400" />}
+              {interviewerGender === 'male' && <Check className="w-4 h-4 text-primary" />}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setInterviewerGender('female')} className="hover:bg-slate-800 cursor-pointer flex items-center justify-between">
+            <DropdownMenuItem onClick={() => setInterviewerGender('female')} className="cursor-pointer flex items-center justify-between">
               <span>Sarah</span>
-              {interviewerGender === 'female' && <Check className="w-4 h-4 text-blue-400" />}
+              {interviewerGender === 'female' && <Check className="w-4 h-4 text-primary" />}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -476,25 +479,27 @@ export default function Interview() {
         {/* Quit Button */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <button
-              className="h-12 w-16 rounded-full bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 flex items-center justify-center transition-all ml-4 border border-slate-700 hover:border-red-900"
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-16 rounded-full ml-4 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
               title="Leave Call"
             >
               <PhoneMissed className="w-5 h-5" />
-            </button>
+            </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-200">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Leave Interview?</AlertDialogTitle>
-              <AlertDialogDescription className="text-slate-400">
+              <AlertDialogDescription>
                 Are you sure you want to end this session? Your progress will be saved.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700">Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => quitSessionMutation.mutate()}
-                className="bg-red-600 hover:bg-red-700 text-white border-0"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Leave
               </AlertDialogAction>
