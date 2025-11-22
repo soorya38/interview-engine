@@ -828,13 +828,28 @@ export default function Analytics() {
     );
   }
 
-  if (!generalAnalytics) {
+  // Show error state if requests failed
+  if (!generalAnalytics && !tests) {
     return (
-      <div className="p-8">
-        <p className="text-muted-foreground">No analytics data available</p>
+      <div className="p-8 space-y-6">
+        <h1 className="text-4xl font-semibold text-foreground mb-2">Analytics</h1>
+        <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
+          <h3 className="font-semibold mb-1">Failed to load analytics data</h3>
+          <p>There was an error loading the analytics data. Please try refreshing the page.</p>
+        </div>
       </div>
     );
   }
+
+  // If we have no data but no error, initialize with empty defaults to show the UI
+  const safeAnalytics = generalAnalytics || {
+    totalSessions: 0,
+    totalUsers: 0,
+    activeUsers: 0,
+    averageScores: { grammar: 0, technical: 0, depth: 0, communication: 0, total: 0 },
+    gradeDistribution: { A: 0, B: 0, C: 0, D: 0, F: 0 },
+    sessionsByDay: {}
+  };
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
@@ -916,9 +931,9 @@ export default function Analytics() {
         <TabsContent value="analytics" className="space-y-6">
           {/* Export Button */}
           <div className="flex justify-end">
-            {selectedTestId === "all" && generalAnalytics && (
+            {selectedTestId === "all" && (
               <ExcelExportDialog
-                analytics={generalAnalytics}
+                analytics={safeAnalytics}
                 testName="All Tests"
                 sessions={filteredSessions}
                 testId={selectedTestId}
@@ -938,7 +953,7 @@ export default function Analytics() {
             <AnalyticsSection
               title="General Analytics"
               description="Overall platform performance across all tests"
-              analytics={generalAnalytics}
+              analytics={safeAnalytics}
               showTotalUsers={true}
             />
           ) : (
