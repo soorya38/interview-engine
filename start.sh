@@ -19,6 +19,10 @@ fi
 echo -e "${YELLOW}⏳ Waiting for Database to be ready...${NC}"
 sleep 5
 
+# 1.5 Ensure Database Exists
+echo -e "${YELLOW}📦 Ensuring Database 'mockmate_dev' exists...${NC}"
+docker exec interview-engine-postgres-1 createdb -U postgres mockmate_dev || echo "Database might already exist, continuing..."
+
 # 2. Configure .env
 echo -e "${YELLOW}⚙️  Configuring Environment...${NC}"
 cat > .env << EOL
