@@ -41,7 +41,6 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit
 
 # Copy build output and necessary files from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/shared ./shared
 
 # Create and use non-root user
