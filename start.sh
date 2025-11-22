@@ -49,6 +49,10 @@ EOL
 echo -e "${YELLOW}npm installing dependencies...${NC}"
 npm install
 
+# 3.5 Push Schema (Create Tables)
+echo -e "${YELLOW}🗄️  Pushing Database Schema...${NC}"
+npm run db:push
+
 # 4. Seed Database
 echo -e "${YELLOW}🌱 Seeding Database (Creating Admin User)...${NC}"
 npm run seed
