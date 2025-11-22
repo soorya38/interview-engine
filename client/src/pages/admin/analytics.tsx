@@ -266,7 +266,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
     queryFn: async () => {
       const endpoint = testId === "all"
         ? "/api/admin/student-sessions?page=1&limit=100"
-        : `/ api / admin / student - sessions ? page = 1 & limit=100`;
+        : `/api/admin/student-sessions?page=1&limit=100`;
       const res = await apiRequest("GET", endpoint);
       const allSessions = res.sessions || [];
 
@@ -335,7 +335,7 @@ function StudentAnswersList({ testId }: { testId: string }) {
                     <div className="text-sm text-muted-foreground">Grade: {session.score.grade}</div>
                   </div>
                 )}
-                <Link href={`/ admin / student - answers / ${session.id} `}>
+                <Link href={`/admin/student-answers/${session.id}`}>
                   <Button variant="outline" size="sm">
                     View Details
                     <ArrowRight className="h-4 w-4 ml-2" />
