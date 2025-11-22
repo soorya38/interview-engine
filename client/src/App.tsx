@@ -147,9 +147,9 @@ function Router() {
 function AppLayout() {
   const { user, isLoading } = useAuth();
   const [location] = useLocation();
-  
-  // Show sidebar if user is authenticated and not on login/register pages
-  const showSidebar = user && !isLoading && !["/login", "/register"].includes(location);
+
+  // Show sidebar if user is authenticated and not on login/register pages or interview page
+  const showSidebar = user && !isLoading && !["/login", "/register"].includes(location) && !location.startsWith("/interview/");
 
   const style = {
     "--sidebar-width": "280px",

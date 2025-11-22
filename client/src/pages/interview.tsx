@@ -3,8 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -17,12 +15,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SendHorizontal, Loader2, X, Mic, MicOff, Square, Volume2, VolumeX } from "lucide-react";
+import { SendHorizontal, Loader2, Mic, MicOff, PhoneMissed, MessageSquare, RefreshCw, Settings, Check } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import type { InterviewSession, InterviewTurn } from "@shared/schema";
+import { InterviewerAgent } from "@/components/InterviewerAgent";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Interview() {
   const { sessionId } = useParams();
@@ -30,11 +37,11 @@ export default function Interview() {
   const { toast } = useToast();
   const [answer, setAnswer] = useState("");
   const [isManualEdit, setIsManualEdit] = useState(false);
-  const [editCountdown, setEditCountdown] = useState(0);
-  const [editTimeoutId, setEditTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [interviewerGender, setInterviewerGender] = useState<'male' | 'female'>('male');
   const answerRef = useRef(answer);
+  const answerBeforeListeningRef = useRef("");
 
   // Update ref when answer changes
   useEffect(() => {
@@ -62,172 +69,14 @@ export default function Interview() {
     },
   });
 
-  // Speech countdown timer removed - auto-submit immediately after speech
-
-  // Countdown timer for manual edits (DISABLED - no timer in manual edit mode)
-  // When user clicks textarea, they want full manual control without timer pressure
-  // useEffect(() => {
-  //   if (editCountdown > 0 && !isTyping && isManualEdit) {
-  //     const timer = setTimeout(() => {
-  //       setEditCountdown(editCountdown - 1);
-  //     }, 1000);
-  //     return () => clearTimeout(timer);
-  //   } else if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
-  //     // Auto-submit when countdown reaches 0 and user is not typing
-  //     console.log("Edit countdown finished, auto-submitting answer");
-  //     setIsManualEdit(false);
-  //   }
-  // }, [editCountdown, isManualEdit, answer, isTyping]);
-
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (editTimeoutId) {
-        clearTimeout(editTimeoutId);
-      }
       if (typingTimeoutId) {
         clearTimeout(typingTimeoutId);
       }
     };
-  }, [editTimeoutId, typingTimeoutId]);
-
-  // Speech-to-text functionality
-  const {
-    isListening,
-    isSupported,
-    startListening,
-    stopListening,
-    transcript,
-    interimTranscript,
-    error: speechError,
-    resetTranscript,
-    countdown
-  } = useSpeechToText({
-    onResult: (text) => {
-      // The hook's transcript state already accumulates the speech results
-      // The useEffect below will sync the answer with the accumulated transcript
-      // This prevents overwriting when there are gaps in speech
-      console.log("Speech result received:", text);
-      console.log("Accumulated transcript will be synced via useEffect");
-    },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Speech Recognition Error",
-        description: error,
-      });
-    },
-    onAutoSubmit: (transcript) => {
-      console.log("Auto-submit triggered with transcript:", transcript);
-      console.log("Current answer ref:", answerRef.current);
-      console.log("Answer ref length:", answerRef.current.length);
-      console.log("Is manual edit mode:", isManualEdit);
-      console.log("Is typing:", isTyping);
-
-      // Don't auto-submit if user is in manual edit mode or currently typing
-      if (isManualEdit || isTyping) {
-        console.log("Auto-submit cancelled - User is in manual edit mode or typing");
-        return;
-      }
-
-      // Use the current answer state which includes both final transcript and interim transcript
-      // This ensures we capture all speech, even if there are gaps
-      // The answerRef is kept in sync by the useEffect that combines transcript + interimTranscript
-      const answerFromRef = answerRef.current.trim();
-      const answerFromTranscript = transcript.trim();
-
-      // Prefer answerRef as it includes interim results, but use transcript param as fallback
-      // Use whichever is longer to ensure we capture all accumulated speech
-      let answerToSubmit = answerFromRef || answerFromTranscript;
-      if (answerFromRef && answerFromTranscript) {
-        // If both exist, use the longer one to ensure completeness
-        answerToSubmit = answerFromRef.length >= answerFromTranscript.length
-          ? answerFromRef
-          : answerFromTranscript;
-      }
-
-      console.log("Answer from ref:", answerFromRef);
-      console.log("Answer from transcript param:", answerFromTranscript);
-      console.log("Using answer:", answerToSubmit);
-
-      // Check if answer has more than 1 character
-      if (answerToSubmit.length > 1) {
-        console.log("Auto-submitting answer:", answerToSubmit);
-        // Auto-submit the complete answer (includes all accumulated speech)
-        submitAnswerMutation.mutate(answerToSubmit);
-      } else {
-        console.log("Auto-submit skipped - Answer too short (length:", answerToSubmit.length, ")");
-      }
-    },
-    autoStart: false,
-    silenceTimeout: session?.voiceAutoSubmitTimeout || 4000
-  });
-
-  // Sync answer with transcript when listening (not in manual edit mode)
-  // This ensures the displayed text shows the accumulated speech recognition results
-  useEffect(() => {
-    if (isListening && !isManualEdit) {
-      // Use the accumulated transcript from the hook plus any interim transcript
-      const fullTranscript = transcript + (interimTranscript || '');
-      // Update the answer to show the accumulated speech
-      // The hook's transcript state already accumulates, preventing overwrites on gaps
-      // Only sync when actively listening to avoid overwriting manual edits
-      setAnswer(fullTranscript);
-    }
-  }, [isListening, transcript, interimTranscript, isManualEdit]);
-
-  // Text-to-speech functionality
-  const {
-    speak,
-    stop: stopSpeaking,
-    isSpeaking,
-    isLoading: isTTSLoading,
-    error: ttsError,
-    hasUserInteracted,
-    enableAudio,
-  } = useTextToSpeech({
-    apiKey: 'AIzaSyAX8RFLowa84x31YUn2oHiv7AXyEu9niEc',
-    language: 'en-US',
-    voiceName: 'en-US-Neural2-F',
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Text-to-Speech Error",
-        description: error,
-      });
-    },
-    onEnd: () => {
-      // Automatically start microphone after question is read
-      if (isSupported && !isListening) {
-        console.log("Question finished reading, starting microphone automatically");
-        handleStartListening();
-      }
-    },
-  });
-
-
-
-  // Auto-read question when it changes
-  useEffect(() => {
-    if (session?.currentQuestion?.questionText) {
-      // Reset answer and transcript when new question loads
-      setAnswer("");
-      setIsManualEdit(false);
-      resetTranscript(); // Reset the accumulated transcript in the hook
-      // Stop any ongoing speech recognition
-      if (isListening) {
-        handleStopListening();
-      }
-      // Always try to read the question automatically
-      // The speak function will handle user interaction requirements
-      speak(session.currentQuestion.questionText);
-    }
-
-    // Cleanup: stop speaking when component unmounts or question changes
-    return () => {
-      stopSpeaking();
-    };
-  }, [session?.currentQuestion?.questionText]);
+  }, [typingTimeoutId]);
 
   const submitAnswerMutation = useMutation({
     mutationFn: async (userAnswer: string) => {
@@ -254,6 +103,103 @@ export default function Interview() {
     },
   });
 
+  // Speech-to-text functionality
+  const {
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    transcript,
+    interimTranscript,
+    error: speechError,
+    resetTranscript,
+    countdown
+  } = useSpeechToText({
+    onResult: (text) => {
+      console.log("Speech result received:", text);
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Speech Recognition Error",
+        description: error,
+      });
+    },
+    onAutoSubmit: (transcript) => {
+      console.log("Auto-submitting. isManualEdit:", isManualEdit, "isTyping:", isTyping);
+      if (isTyping) {
+        return;
+      }
+
+      const answerFromRef = answerRef.current.trim();
+      const answerFromTranscript = transcript.trim();
+
+      let answerToSubmit = answerFromRef || answerFromTranscript;
+      if (answerFromRef && answerFromTranscript) {
+        answerToSubmit = answerFromRef.length >= answerFromTranscript.length
+          ? answerFromRef
+          : answerFromTranscript;
+      }
+
+      if (answerToSubmit.length > 1) {
+        submitAnswerMutation.mutate(answerToSubmit);
+      }
+    },
+    autoStart: false,
+    silenceTimeout: session?.voiceAutoSubmitTimeout || 4000
+  });
+
+  // Sync answer with transcript
+  useEffect(() => {
+    if (isListening && !isManualEdit) {
+      const fullTranscript = transcript + (interimTranscript || '');
+      const prefix = answerBeforeListeningRef.current;
+      const spacing = prefix && fullTranscript ? " " : "";
+      setAnswer(prefix + spacing + fullTranscript);
+    }
+  }, [isListening, transcript, interimTranscript, isManualEdit]);
+
+  // Text-to-speech functionality
+  const {
+    speak,
+    stop: stopSpeaking,
+    isSpeaking,
+    enableAudio,
+  } = useTextToSpeech({
+    apiKey: 'AIzaSyAX8RFLowa84x31YUn2oHiv7AXyEu9niEc',
+    language: 'en-US',
+    voiceName: interviewerGender === 'male' ? 'en-US-Neural2-D' : 'en-US-Neural2-F',
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Text-to-Speech Error",
+        description: error,
+      });
+    },
+    onEnd: () => {
+      if (isSupported && !isListening) {
+        handleStartListening();
+      }
+    },
+  });
+
+  // Auto-read question when it changes
+  useEffect(() => {
+    if (session?.currentQuestion?.questionText) {
+      setAnswer("");
+      setIsManualEdit(false);
+      resetTranscript();
+      if (isListening) {
+        handleStopListening();
+      }
+      speak(session.currentQuestion.questionText);
+    }
+
+    return () => {
+      stopSpeaking();
+    };
+  }, [session?.currentQuestion?.questionText]);
+
   const quitSessionMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("POST", `/api/sessions/${sessionId}/quit`);
@@ -275,18 +221,8 @@ export default function Interview() {
     },
   });
 
-  // Speech countdown auto-submission removed - auto-submit immediately after speech
-
-  // Handle auto-submission when edit countdown reaches 0 (DISABLED - no auto-submit in manual mode)
-  // useEffect(() => {
-  //   if (editCountdown === 0 && isManualEdit && answer.trim() && !isTyping) {
-  //     console.log("Auto-submitting answer after edit countdown");
-  //     submitAnswerMutation.mutate(answer);
-  //   }
-  // }, [editCountdown, isManualEdit, answer, submitAnswerMutation, isTyping]);
-
   const handleSubmit = async () => {
-    await enableAudio(); // Enable audio on user interaction
+    await enableAudio();
     if (!answer.trim()) {
       toast({
         variant: "destructive",
@@ -295,68 +231,44 @@ export default function Interview() {
       });
       return;
     }
-    // Reset all states when manually submitting
     setIsManualEdit(false);
-    setEditCountdown(0);
     submitAnswerMutation.mutate(answer);
   };
 
   const handleManualEdit = () => {
     setIsManualEdit(true);
-    setEditCountdown(0); // No countdown timer in manual edit mode
-    setIsTyping(false); // Reset typing state
-
-    // Stop speech recognition when user enters manual edit mode
+    setIsTyping(false);
     if (isListening) {
-      console.log("Stopping speech recognition due to manual edit");
       handleStopListening();
     }
-
-    console.log("User clicked textarea, entering manual edit mode (no timer)");
   };
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newAnswer = e.target.value;
     setAnswer(newAnswer);
 
-    // Enter manual edit mode when user starts typing
     if (!isManualEdit) {
       setIsManualEdit(true);
-      console.log("User started typing, entering manual edit mode");
-
-      // Stop speech recognition when user starts typing
       if (isListening) {
-        console.log("Stopping speech recognition due to typing");
         handleStopListening();
       }
     }
 
-    // Set typing state to true
     setIsTyping(true);
-
-    // Clear existing typing timeout
     if (typingTimeoutId) {
       clearTimeout(typingTimeoutId);
     }
 
-    // Set new timeout to detect when user stops typing (2 seconds)
     const newTimeoutId = setTimeout(() => {
       setIsTyping(false);
-      console.log("User stopped typing");
     }, 2000);
 
     setTypingTimeoutId(newTimeoutId);
   };
 
   const handleStartListening = async () => {
-    console.log("handleStartListening called");
-    console.log("isSupported:", isSupported);
-    console.log("isListening:", isListening);
-
-    await enableAudio(); // Enable audio on user interaction
-
+    await enableAudio();
     if (!isSupported) {
-      console.log("Speech recognition not supported");
       toast({
         variant: "destructive",
         title: "Speech Recognition Not Supported",
@@ -364,13 +276,10 @@ export default function Interview() {
       });
       return;
     }
-
-    // Clear the answer field and reset transcript when starting new speech session
-    setAnswer("");
+    // Save the current answer before clearing/resetting for new speech
+    answerBeforeListeningRef.current = answer;
     setIsManualEdit(false);
-    resetTranscript(); // Reset the accumulated transcript in the hook
-
-    console.log("Starting speech recognition...");
+    resetTranscript();
     startListening();
   };
 
@@ -382,13 +291,22 @@ export default function Interview() {
     }
   };
 
+  const handleAskAgain = async () => {
+    if (session?.currentQuestion?.questionText) {
+      if (isListening) {
+        handleStopListening();
+      }
+      await enableAudio();
+      speak(session.currentQuestion.questionText);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="space-y-4 w-full max-w-3xl p-8">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-40 w-full" />
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <p className="text-slate-400">Connecting to interview session...</p>
         </div>
       </div>
     );
@@ -396,10 +314,10 @@ export default function Interview() {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Session not found</p>
-          <Button onClick={() => setLocation("/tests")} className="mt-4">
+          <p className="text-slate-400 mb-4">Session not found</p>
+          <Button onClick={() => setLocation("/tests")} variant="secondary">
             Back to Tests
           </Button>
         </div>
@@ -407,230 +325,182 @@ export default function Interview() {
     );
   }
 
-  const progress = session.totalQuestions
-    ? ((session.currentQuestionIndex + 1) / session.totalQuestions) * 100
-    : 0;
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto p-8 space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Question {session.currentQuestionIndex + 1} of {session.totalQuestions}
-            </span>
-            <div className="flex items-center gap-4">
-              <span>{Math.round(progress)}% Complete</span>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                    <X className="h-4 w-4 mr-2" />
-                    Quit Test
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Quit Test?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to quit this test? Your progress will be saved, but you won't be able to continue from where you left off.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => quitSessionMutation.mutate()}
-                      disabled={quitSessionMutation.isPending}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {quitSessionMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Quitting...
-                        </>
-                      ) : (
-                        "Quit Test"
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-          <Progress value={progress} className="h-2" data-testid="progress-interview" />
+    <div className="h-screen w-screen overflow-hidden bg-slate-950 flex flex-col text-slate-200 font-sans">
+      {/* Header */}
+      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+          <span className="font-medium text-sm text-slate-300">Live Interview Session</span>
+          <span className="text-slate-600 text-xs">|</span>
+          <span className="text-xs text-slate-500 font-mono">ID: {sessionId?.slice(0, 8)}</span>
         </div>
 
-        <Card className="p-8">
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  Practice Question
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await enableAudio(); // Enable audio on user interaction
-                    if (isSpeaking) {
-                      stopSpeaking();
-                    } else if (session.currentQuestion?.questionText) {
-                      speak(session.currentQuestion.questionText);
-                    }
-                  }}
-                  disabled={isTTSLoading || !session.currentQuestion?.questionText}
-                  className="flex items-center gap-2"
-                >
-                  {isTTSLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : isSpeaking ? (
-                    <>
-                      <VolumeX className="h-4 w-4" />
-                      Stop Reading
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="h-4 w-4" />
-                      Read Question
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-2xl font-medium leading-relaxed" data-testid="text-question">
-                {session.currentQuestion?.questionText || "Loading question..."}
+        <div className="text-xs font-mono text-slate-500">
+          Question {session.currentQuestionIndex + 1} / {session.totalQuestions}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+
+        {/* Left Stage - Interviewer */}
+        <div className="h-[40vh] md:h-auto md:flex-1 relative flex flex-col items-center justify-center bg-[#121212] p-4 md:p-8">
+
+          {/* Agent Container */}
+          <div className="relative transform scale-75 md:scale-125 transition-transform duration-500">
+            <InterviewerAgent isSpeaking={isSpeaking} gender={interviewerGender} />
+          </div>
+
+          {/* Captions Overlay */}
+          <div className="absolute bottom-4 md:bottom-8 left-0 right-0 px-4 md:px-8 flex justify-center">
+            <div className="bg-black/60 backdrop-blur-md p-3 md:p-6 rounded-2xl max-w-3xl w-full border border-white/5 shadow-2xl transition-all duration-300 hover:bg-black/70">
+              <h3 className="text-[10px] md:text-xs uppercase tracking-widest text-blue-400 mb-1 md:mb-2 font-bold">
+                {interviewerGender === 'male' ? 'Alex' : 'Sarah'}
+              </h3>
+              <p className="text-sm md:text-xl leading-relaxed text-white font-medium line-clamp-3 md:line-clamp-none">
+                {session.currentQuestion?.questionText || "..."}
               </p>
             </div>
-
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Your Answer (Click to edit)</label>
-                <div className="flex items-center gap-3">
-                  {isListening && (
-                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="font-medium">Listening...</span>
-                    </div>
-                  )}
-                  {isManualEdit && (
-                    <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-semibold">Manual edit mode - Click Submit when ready</span>
-                    </div>
-                  )}
-                </div>
+        {/* Right Sidebar - Chat/Answer */}
+        <div className="flex-1 md:flex-none w-full md:w-96 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shadow-2xl z-20">
+          <div className="p-3 md:p-4 border-b border-slate-800 bg-slate-900 flex items-center justify-between shrink-0">
+            <h2 className="font-semibold text-sm text-slate-200 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-blue-400" />
+              Your Response
+            </h2>
+            {isListening && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-orange-400 font-mono">
+                  {countdown > 0 ? `${countdown}s` : ''}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-900/30 px-2 py-1 rounded-full border border-green-500/30">
+                  Listening
+                </span>
               </div>
+            )}
+          </div>
+
+          <div className="flex-1 p-3 md:p-4 flex flex-col gap-2 overflow-y-auto bg-slate-950/30 min-h-0">
+            <div className="flex-1 relative">
               <Textarea
                 value={answer}
                 onChange={handleAnswerChange}
                 onFocus={handleManualEdit}
-                placeholder={
-                  isSpeaking
-                    ? "Question is being read... Please wait..."
-                    : "Type your answer here or use voice input..."
-                }
-                className={`min-h-[200px] resize-none text-base font-medium bg-white dark:bg-gray-900 border-2 focus:border-blue-500 dark:focus:border-blue-400 ${isListening ? 'border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20' : ''
-                  } ${isManualEdit ? 'border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20' : ''
-                  } ${isSpeaking ? 'opacity-60 cursor-not-allowed' : ''
-                  }`}
-                disabled={submitAnswerMutation.isPending || isSpeaking}
-                data-testid="textarea-answer"
+                placeholder={isSpeaking ? "Listening to question..." : "Type your answer here..."}
+                className="w-full h-full resize-none bg-transparent border-0 focus:ring-0 text-slate-300 p-0 text-sm leading-relaxed placeholder:text-slate-600"
+                disabled={submitAnswerMutation.isPending}
               />
-            </div>
 
-
-            {/* Speech-to-Text Controls */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant={isListening ? "destructive" : "outline"}
-                  size="sm"
-                  onClick={isListening ? handleStopListening : handleStartListening}
-                  disabled={submitAnswerMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  {isListening ? (
-                    <>
-                      <Square className="h-4 w-4" />
-                      Stop Recording
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="h-4 w-4" />
-                      Start Voice Input
-                    </>
-                  )}
-                </Button>
-
-                {isListening && (
-                  <div className="flex items-center gap-2 text-sm">
-                    {countdown > 0 ? (
-                      <span className="text-orange-600 dark:text-orange-400 font-semibold animate-pulse bg-orange-50 dark:bg-orange-950/20 px-3 py-1 rounded-full border border-orange-200 dark:border-orange-800">
-                        ⏰ Auto-submitting in {countdown}s... Speak to cancel
-                      </span>
-                    ) : (
-                      <span className="text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-950/20 px-3 py-1 rounded-full border border-green-200 dark:border-green-800">
-                        🎤 Listening... Speak now
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Speech Status Messages */}
-              {speechError && (
-                <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950/20 p-2 rounded">
-                  {speechError}
-                </div>
-              )}
-
-              {!isSupported && (
-                <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
-                  Speech recognition is not supported in this browser. Please use Chrome or Edge for voice input.
-                </div>
-              )}
-
-              {/* Interim transcript display */}
+              {/* Interim Transcript Overlay */}
               {interimTranscript && (
-                <div className="text-base text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
-                  <span className="font-semibold">🎤 Live transcript:</span>
-                  <span className="ml-2 font-medium">{interimTranscript}</span>
+                <div className="absolute bottom-0 left-0 right-0 p-2 bg-blue-900/20 border-t border-blue-500/20 text-blue-200 text-xs italic">
+                  {interimTranscript}
                 </div>
               )}
-            </div>
-
-
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-muted-foreground">
-                Take your time and provide a thoughtful answer
-              </p>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitAnswerMutation.isPending || !answer.trim()}
-                data-testid="button-submit-answer"
-              >
-                {submitAnswerMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <SendHorizontal className="h-4 w-4 mr-2" />
-                    Submit Answer
-                  </>
-                )}
-              </Button>
             </div>
           </div>
-        </Card>
+
+          <div className="p-2 md:p-4 border-t border-slate-800 bg-slate-900 text-[10px] md:text-xs text-slate-500 text-center hidden md:block shrink-0">
+            {isListening ? "Speak clearly into your microphone" : "Type or use voice to answer"}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Control Bar */}
+      <div className="h-20 bg-slate-900 border-t border-slate-800 flex items-center justify-center gap-4 px-8 relative z-30 shrink-0">
+
+        {/* Ask Again Button */}
+        <button
+          onClick={handleAskAgain}
+          disabled={isSpeaking}
+          className="h-12 w-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all border border-slate-700 disabled:opacity-50"
+          title="Ask Question Again"
+        >
+          <RefreshCw className={`w-5 h-5 ${isSpeaking ? 'animate-spin' : ''}`} />
+        </button>
+
+        {/* Mic Toggle */}
+        <button
+          onClick={isListening ? handleStopListening : handleStartListening}
+          className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-200 ${isListening
+            ? 'bg-slate-700 text-white hover:bg-slate-600'
+            : 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20'
+            }`}
+          title={isListening ? "Mute Microphone" : "Unmute Microphone"}
+        >
+          {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </button>
+
+        {/* Submit Button */}
+        <button
+          onClick={handleSubmit}
+          disabled={!answer.trim() || submitAnswerMutation.isPending}
+          className="h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+        >
+          {submitAnswerMutation.isPending ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <SendHorizontal className="w-5 h-5" />
+          )}
+          <span>Submit Answer</span>
+        </button>
+
+        {/* Settings / Gender Selection */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="h-12 w-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all ml-4 border border-slate-700"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200 w-56">
+            <DropdownMenuLabel>Select Interviewer</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-slate-800" />
+            <DropdownMenuItem onClick={() => setInterviewerGender('male')} className="hover:bg-slate-800 cursor-pointer flex items-center justify-between">
+              <span>Alex</span>
+              {interviewerGender === 'male' && <Check className="w-4 h-4 text-blue-400" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setInterviewerGender('female')} className="hover:bg-slate-800 cursor-pointer flex items-center justify-between">
+              <span>Sarah</span>
+              {interviewerGender === 'female' && <Check className="w-4 h-4 text-blue-400" />}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Quit Button */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              className="h-12 w-16 rounded-full bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 flex items-center justify-center transition-all ml-4 border border-slate-700 hover:border-red-900"
+              title="Leave Call"
+            >
+              <PhoneMissed className="w-5 h-5" />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-200">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Leave Interview?</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400">
+                Are you sure you want to end this session? Your progress will be saved.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => quitSessionMutation.mutate()}
+                className="bg-red-600 hover:bg-red-700 text-white border-0"
+              >
+                Leave
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
