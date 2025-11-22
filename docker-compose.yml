@@ -20,18 +20,18 @@ services:
   postgres:
     image: postgres:15-alpine
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-mockmate_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    shm_size: 1gb  # Fix for "No space left on device" shared memory error
+    shm_size: 1gb # Fix for "No space left on device" shared memory error
     networks:
       - freelanceflow-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,7 +45,7 @@ services:
     networks:
       - freelanceflow-network
     healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
+      test: [ "CMD-SHELL", "ollama list || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
