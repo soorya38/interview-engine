@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 
 (async () => {
   // Auto-seed database if empty
-  await autoSeedIfEmpty();
+  // await autoSeedIfEmpty();
 
   const server = await registerRoutes(app);
 
@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   // Bind to 0.0.0.0 to make it accessible from other machines
   const port = parseInt(process.env.PORT || '5173', 10);
   const host = process.env.HOST || '0.0.0.0';
-  
+
   server.listen(port, host, () => {
     log(`serving on ${host}:${port}`);
     if (host === '0.0.0.0') {
