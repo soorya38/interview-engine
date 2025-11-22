@@ -35,6 +35,11 @@ export function AppSidebar() {
       icon: BookOpen,
     },
     {
+      title: "Analytics",
+      url: "/analytics",
+      icon: BarChart3,
+    },
+    {
       title: "History",
       url: "/history",
       icon: History,

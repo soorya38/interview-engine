@@ -669,6 +669,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/analytics/user", authMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getUserSessions(req.user!.userId);
+      const scores = await storage.getUserScores(req.user!.userId);
+      const completedSessions = sessions.filter(s => s.status === "completed");
+
+      // 1. Score History for Line Chart
+      // Map scores to sessions to get dates and test names
+      const scoreHistory = await Promise.all(completedSessions.map(async (session) => {
+        const score = scores.find(s => s.sessionId === session.id);
+        const test = await storage.getTest(session.testId);
+        if (!score) return null;
+        return {
+          date: session.completedAt ? new Date(session.completedAt).toLocaleDateString() : 'Unknown',
+          score: score.totalScore,
+          testName: test?.name || 'Unknown Test',
+        };
+      }));
+
+      // Filter out nulls and sort by date (assuming sessions are returned sorted or we sort here)
+      // Actually sessions from storage might not be sorted by date, so let's rely on array order if it's chronological
+      // or sort if needed. For now, we'll assume storage returns recent first, so we might want to reverse for a chart.
+      const validScoreHistory = scoreHistory.filter(s => s !== null).reverse();
+
+      // 2. Topic Performance for Radar/Bar Chart
+      // We need to fetch all turns to know which topic each question belonged to.
+      // This could be expensive. An optimization would be to store topic scores in the `scores` table.
+      // For now, we'll iterate through sessions -> turns -> questions -> topics.
+      const topicStats: Record<string, { totalScore: number; count: number }> = {};
+
+      for (const session of completedSessions) {
+        const turns = await storage.getSessionTurns(session.id);
+        for (const turn of turns) {
+          if (turn.evaluation) {
+            const question = await storage.getQuestion(turn.questionId);
+            if (question) {
+              const topic = await storage.getTopicCategory(question.topicCategoryId);
+              const topicName = topic?.name || 'Uncategorized';
+
+              // Calculate an average score for this turn based on evaluation
+              const turnScore = (
+                (turn.evaluation.grammar || 0) +
+                (turn.evaluation.technical || 0) +
+                (turn.evaluation.depth || 0) +
+                (turn.evaluation.communication || 0)
+              ) / 4;
+
+              if (!topicStats[topicName]) {
+                topicStats[topicName] = { totalScore: 0, count: 0 };
+              }
+              topicStats[topicName].totalScore += turnScore;
+              topicStats[topicName].count += 1;
+            }
+          }
+        }
+      }
+
+      const topicPerformance = Object.entries(topicStats).map(([topic, stats]) => ({
+        topic,
+        averageScore: Math.round(stats.totalScore / stats.count),
+        questionsAnswered: stats.count
+      }));
+
+      // 3. Skill Profile (Aggregated Strengths/Weaknesses)
+      const skillProfile: { strengths: Record<string, number>; improvements: Record<string, number> } = {
+        strengths: {},
+        improvements: {}
+      };
+
+      for (const score of scores) {
+        if (score.detailedFeedback) {
+          const feedback = score.detailedFeedback as any;
+          if (Array.isArray(feedback.strengths)) {
+            feedback.strengths.forEach((s: string) => {
+              skillProfile.strengths[s] = (skillProfile.strengths[s] || 0) + 1;
+            });
+          }
+          if (Array.isArray(feedback.improvements)) {
+            feedback.improvements.forEach((s: string) => {
+              skillProfile.improvements[s] = (skillProfile.improvements[s] || 0) + 1;
+            });
+          }
+        }
+      }
+
+      // Convert to array and sort by count
+      const topStrengths = Object.entries(skillProfile.strengths)
+        .map(([skill, count]) => ({ skill, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const topImprovements = Object.entries(skillProfile.improvements)
+        .map(([area, count]) => ({ area, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      res.json({
+        scoreHistory: validScoreHistory,
+        topicPerformance,
+        skillProfile: {
+          strengths: topStrengths,
+          improvements: topImprovements
+        }
+      });
+
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/profile/stats", authMiddleware, async (req, res) => {
     try {
       const sessions = await storage.getUserSessions(req.user!.userId);

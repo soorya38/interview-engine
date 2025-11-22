@@ -105,6 +105,9 @@ function Router() {
       <Route path="/practice">
         {() => <ProtectedRoute component={Practice} />}
       </Route>
+      <Route path="/analytics">
+        {() => <ProtectedRoute component={Analytics} />}
+      </Route>
       <Route path="/interview/:sessionId">
         {() => <ProtectedRoute component={Interview} />}
       </Route>
