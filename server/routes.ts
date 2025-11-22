@@ -95,7 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ user: userWithoutPassword, token });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      const dbUrl = process.env.DATABASE_URL || "default";
+      res.status(400).json({ error: `${error.message} [DB_URL=${dbUrl}]` });
     }
   });
 
