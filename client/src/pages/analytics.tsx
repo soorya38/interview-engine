@@ -66,7 +66,22 @@ export default function Analytics() {
         );
     }
 
-    if (!analytics) return null;
+    if (!analytics) {
+        return (
+            <div className="p-8 space-y-8 max-w-7xl mx-auto">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Your Analytics</h1>
+                    <p className="text-muted-foreground">
+                        Track your progress and identify areas for improvement
+                    </p>
+                </div>
+                <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
+                    <h3 className="font-semibold mb-1">Failed to load analytics data</h3>
+                    <p>There was an error loading your analytics. Please try refreshing the page.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 space-y-8 max-w-7xl mx-auto">

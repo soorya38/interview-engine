@@ -26,6 +26,7 @@ import AdminQuestions from "@/pages/admin/questions";
 import AdminUsers from "@/pages/admin/users";
 import StudentAnswers, { StudentAnswerDetail } from "@/pages/admin/student-answers";
 import Analytics from "@/pages/admin/analytics";
+import StudentAnalytics from "@/pages/analytics";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType; adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -106,7 +107,7 @@ function Router() {
         {() => <ProtectedRoute component={Practice} />}
       </Route>
       <Route path="/analytics">
-        {() => <ProtectedRoute component={Analytics} />}
+        {() => <ProtectedRoute component={StudentAnalytics} />}
       </Route>
       <Route path="/interview/:sessionId">
         {() => <ProtectedRoute component={Interview} />}
