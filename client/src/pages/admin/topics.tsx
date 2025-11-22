@@ -59,7 +59,11 @@ export default function AdminTests() {
   });
 
   const { data: tests, isLoading } = useQuery<Test[]>({
-    queryKey: ["/api/tests"],
+    queryKey: ["/api/tests", { type: "test" }],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/tests?type=test");
+      return res;
+    }
   });
 
   const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({

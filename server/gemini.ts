@@ -20,10 +20,46 @@ export async function conductInterview(
   userProfile?: {
     username: string;
     pastScores?: number[];
-  }
+  },
+  mode: 'test' | 'practice' = 'test'
 ): Promise<InterviewEvaluation> {
   try {
-    const systemPrompt = `You are a professional AI interviewer conducting a mock technical interview. Act naturally and conversationally, like a real senior engineer interviewing a candidate.
+    let systemPrompt = "";
+
+    if (mode === 'practice') {
+      systemPrompt = `You are a friendly and patient AI tutor helping a student practice for a technical interview.
+Your role is to:
+1. Evaluate the student's answer constructively.
+2. If the answer is INCORRECT or INCOMPLETE:
+   - Gently explain WHY it is wrong or what is missing.
+   - Teach the correct concept using simple, clear examples.
+   - Encourage them to try again or remember this for next time.
+3. If the answer is CORRECT:
+   - Validate their understanding.
+   - Briefly reinforce why it's correct or add a small "pro tip" to deepen their knowledge.
+4. Be supportive and educational. Your goal is to TEACH, not just judge.
+
+Evaluate the answer on these criteria (0-100 scale):
+- Grammar: Clarity and professionalism
+- Technical: Accuracy and understanding
+- Depth: Detail and thoroughness
+- Communication: Articulation and flow
+
+Provide your response in JSON format with these fields:
+{
+  "grammar": <0-100>,
+  "technical": <0-100>,
+  "depth": <0-100>,
+  "communication": <0-100>,
+  "feedback": "<constructive feedback focusing on learning>",
+  "interviewer_text": "<your natural, conversational response as a tutor. If wrong, explain the concept. If right, praise and reinforce. Keep it encouraging.>",
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "areasToImprove": ["<area 1>", "<area 2>"],
+  "recommendations": ["<learning recommendation 1>", "<learning recommendation 2>"]
+}`;
+    } else {
+      // Default TEST mode
+      systemPrompt = `You are a professional AI interviewer conducting a mock technical interview. Act naturally and conversationally, like a real senior engineer interviewing a candidate.
 
 Your role is to:
 1. Respond to the candidate's answer in a natural, conversational way - as if you're having a real interview discussion
@@ -44,18 +80,19 @@ Provide your response in JSON format with these fields:
   "depth": <0-100>,
   "communication": <0-100>,
   "feedback": "<overall constructive feedback summarizing the response>",
-  "interviewer_text": "<your natural, conversational response to the candidate. Sound like a real interviewer - acknowledge what they said well, ask a brief follow-up if relevant, or transition naturally to the next topic. Keep it professional but friendly, like: 'Great explanation of closures! I particularly liked how you mentioned lexical scope. One thing to consider...' or 'I see what you're getting at with the event loop. Let me dig a bit deeper...' Be concise (2-3 sentences max).>",
+  "interviewer_text": "<your natural, conversational response to the candidate. Sound like a real interviewer - acknowledge what they said well, ask a brief follow-up if relevant, or transition naturally to the next topic. Keep it professional but friendly.>",
   "strengths": ["<specific strength 1>", "<specific strength 2>", "<specific strength 3>"],
   "areasToImprove": ["<specific area to improve 1>", "<specific area to improve 2>"],
   "recommendations": ["<actionable recommendation 1>", "<actionable recommendation 2>", "<actionable recommendation 3>"]
-}
+}`;
+    }
 
-Guidelines for feedback:
-- Strengths: Be specific about what they did well (e.g., "Clearly explained lexical scope with a practical example" not just "Good explanation")
-- Areas to Improve: Point out specific gaps or misconceptions (e.g., "Didn't mention how closures relate to memory management" not just "Needs more detail")
-- Recommendations: Give concrete next steps (e.g., "Practice implementing closures in real-world scenarios like creating private variables" not just "Study more about closures")`;
+    systemPrompt += `\n\nGuidelines for feedback:
+- Strengths: Be specific about what they did well
+- Areas to Improve: Point out specific gaps or misconceptions
+- Recommendations: Give concrete next steps`;
 
-    const userContext = userProfile 
+    const userContext = userProfile
       ? `Candidate: ${userProfile.username}. Previous average scores: ${userProfile.pastScores?.join(", ") || "No history"}`
       : "New candidate";
 
@@ -97,7 +134,7 @@ Please evaluate this answer and provide your feedback.`;
 
     const data = await response.json();
     const rawJson = data.message?.content || data.response;
-    
+
     if (!rawJson) {
       throw new Error("Empty response from Ollama");
     }
@@ -117,7 +154,7 @@ Please evaluate this answer and provide your feedback.`;
       console.error("Failed to parse JSON response:", jsonString);
       throw new Error(`Invalid JSON response from Ollama: ${parseError}`);
     }
-    
+
     // Ensure scores are within 0-100 range
     evaluation.grammar = Math.max(0, Math.min(100, evaluation.grammar || 0));
     evaluation.technical = Math.max(0, Math.min(100, evaluation.technical || 0));
@@ -127,7 +164,7 @@ Please evaluate this answer and provide your feedback.`;
     // Ensure required fields have default values if missing
     evaluation.feedback = evaluation.feedback || "Thank you for your answer.";
     evaluation.interviewer_text = evaluation.interviewer_text || evaluation.feedback || "Thank you for your answer. Let's move on to the next question.";
-    
+
     // Ensure arrays exist and are arrays (preserve existing values)
     evaluation.strengths = Array.isArray(evaluation.strengths) ? evaluation.strengths : [];
     evaluation.areasToImprove = Array.isArray(evaluation.areasToImprove) ? evaluation.areasToImprove : [];

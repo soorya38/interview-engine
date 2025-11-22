@@ -17,7 +17,11 @@ export default function Tests() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: tests, isLoading } = useQuery<(Test & { questionCount?: number })[]>({
-    queryKey: ["/api/tests"],
+    queryKey: ["/api/tests", { type: "test" }],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/tests?type=test");
+      return res;
+    }
   });
 
   const startInterviewMutation = useMutation({

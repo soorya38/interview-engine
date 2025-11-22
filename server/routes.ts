@@ -164,6 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Tests routes
   app.get("/api/tests", authMiddleware, async (req, res) => {
     try {
+      const type = (req.query.type as string) || "test";
       const allTests = await storage.getAllTests();
 
       // Get all users once to avoid N+1 queries
@@ -174,9 +175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map((user) => user.id)
       );
 
-      // Filter tests to only show those created by admin/instructor users
+      // Filter tests to only show those created by admin/instructor users AND match the requested type
       const tests = allTests.filter((test) =>
-        test.createdBy && adminUserIds.has(test.createdBy)
+        test.createdBy && adminUserIds.has(test.createdBy) && (test.type === type || (!test.type && type === "test"))
       );
 
       // Add question count for each test
@@ -433,6 +434,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userScores = await storage.getUserScores(req.user!.userId);
       const pastScores = userScores.map((s) => s.totalScore);
 
+      // Get test details to determine mode
+      const test = await storage.getTest(session.testId);
+      const mode = (test?.type === 'practice') ? 'practice' : 'test';
+
       // Conduct AI interview evaluation
       const evaluation = await conductInterview(
         currentQuestion.questionText,
@@ -440,7 +445,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           username: req.user!.username,
           pastScores,
-        }
+        },
+        mode
       );
 
       // Save turn

@@ -40,6 +40,7 @@ export const tests = pgTable("tests", {
   duration: integer("duration"), // duration in minutes
   difficulty: varchar("difficulty", { length: 50 }), // easy, medium, hard
   voiceAutoSubmitTimeout: integer("voice_auto_submit_timeout").default(3000).notNull(),
+  type: varchar("type", { length: 50 }).notNull().default("test"), // test, practice
   isActive: boolean("is_active").default(true).notNull(),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -200,6 +201,7 @@ export const insertTestSchema = createInsertSchema(tests).omit({
   createdAt: true,
 }).extend({
   questionIds: z.array(z.string()).optional(),
+  type: z.enum(["test", "practice"]).default("test"),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({

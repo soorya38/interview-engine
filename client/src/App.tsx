@@ -13,12 +13,14 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Tests from "@/pages/tests";
+import Practice from "@/pages/practice";
 import Interview from "@/pages/interview";
 import Results from "@/pages/results";
 import History from "@/pages/history";
 import Profile from "@/pages/profile";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminTopics from "@/pages/admin/topics";
+import AdminPractice from "@/pages/admin/practice";
 import AdminTopicCategories from "@/pages/admin/topic-categories";
 import AdminQuestions from "@/pages/admin/questions";
 import AdminUsers from "@/pages/admin/users";
@@ -100,6 +102,9 @@ function Router() {
       <Route path="/tests">
         {() => <ProtectedRoute component={Tests} />}
       </Route>
+      <Route path="/practice">
+        {() => <ProtectedRoute component={Practice} />}
+      </Route>
       <Route path="/interview/:sessionId">
         {() => <ProtectedRoute component={Interview} />}
       </Route>
@@ -117,6 +122,9 @@ function Router() {
       </Route>
       <Route path="/admin/topics">
         {() => <ProtectedRoute component={AdminTopics} adminOnly />}
+      </Route>
+      <Route path="/admin/practice">
+        {() => <ProtectedRoute component={AdminPractice} adminOnly />}
       </Route>
       <Route path="/admin/topic-categories">
         {() => <ProtectedRoute component={AdminTopicCategories} adminOnly />}

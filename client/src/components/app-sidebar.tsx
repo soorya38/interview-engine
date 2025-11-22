@@ -30,6 +30,11 @@ export function AppSidebar() {
       icon: BookOpen,
     },
     {
+      title: "Practice",
+      url: "/practice",
+      icon: BookOpen,
+    },
+    {
       title: "History",
       url: "/history",
       icon: History,
@@ -50,6 +55,11 @@ export function AppSidebar() {
     {
       title: "Tests",
       url: "/admin/topics",
+      icon: BookOpen,
+    },
+    {
+      title: "Practice",
+      url: "/admin/practice",
       icon: BookOpen,
     },
     {

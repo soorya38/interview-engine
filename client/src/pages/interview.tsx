@@ -40,6 +40,8 @@ export default function Interview() {
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [interviewerGender, setInterviewerGender] = useState<'male' | 'female'>('male');
+  const [feedbackMode, setFeedbackMode] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState<string | null>(null);
   const answerRef = useRef(answer);
   const answerBeforeListeningRef = useRef("");
 
@@ -53,6 +55,7 @@ export default function Interview() {
     turns?: InterviewTurn[];
     totalQuestions?: number;
     voiceAutoSubmitTimeout?: number;
+    test?: { type: string };
   }>({
     queryKey: ["/api/sessions", sessionId],
     queryFn: async () => {
@@ -89,7 +92,13 @@ export default function Interview() {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
       setAnswer("");
 
-      if (data.completed) {
+      // Check if practice mode
+      if (session?.test?.type === 'practice' && !data.completed) {
+        setFeedbackMode(true);
+        setCurrentFeedback(data.turn.aiResponse);
+        // Speak the feedback
+        speak(data.turn.aiResponse);
+      } else if (data.completed) {
         queryClient.invalidateQueries({ queryKey: ["/api/sessions/history"] });
         setLocation(`/results/${sessionId}`);
       }
@@ -192,7 +201,10 @@ export default function Interview() {
       if (isListening) {
         handleStopListening();
       }
-      speak(session.currentQuestion.questionText);
+      // Only auto-speak if NOT in feedback mode (to avoid overlapping)
+      if (!feedbackMode) {
+        speak(session.currentQuestion.questionText);
+      }
     }
 
     return () => {
@@ -297,6 +309,16 @@ export default function Interview() {
         handleStopListening();
       }
       await enableAudio();
+      speak(session.currentQuestion.questionText);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    setFeedbackMode(false);
+    setCurrentFeedback(null);
+    stopSpeaking();
+    // Trigger next question read
+    if (session?.currentQuestion?.questionText) {
       speak(session.currentQuestion.questionText);
     }
   };
@@ -409,6 +431,31 @@ export default function Interview() {
           </div>
         </div>
       </div>
+
+      {/* Feedback Overlay for Practice Mode */}
+      {feedbackMode && (
+        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border shadow-2xl rounded-xl max-w-2xl w-full p-6 flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+            <div className="flex items-center gap-3 text-primary">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <h3 className="text-xl font-semibold">Feedback</h3>
+            </div>
+
+            <div className="bg-muted/30 p-4 rounded-lg text-foreground leading-relaxed max-h-[60vh] overflow-y-auto">
+              {currentFeedback}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button onClick={handleNextQuestion} size="lg" className="gap-2">
+                Next Question
+                <SendHorizontal className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Control Bar */}
       <div className="h-20 bg-card border-t border-border flex items-center justify-center gap-4 px-8 relative z-30 shrink-0">
