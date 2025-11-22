@@ -41,6 +41,11 @@ function adminMiddleware(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {

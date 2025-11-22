@@ -52,7 +52,7 @@ EXPOSE 5173
 
 # Health check for backend API
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "const http=require('http');http.get('http://localhost:3000/api/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+  CMD node -e "const http=require('http');http.get('http://localhost:5173/api/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
 
 # Start the application
 CMD ["node", "dist/index.js"]
